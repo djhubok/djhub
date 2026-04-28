@@ -56,6 +56,16 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
     await saveUserProfile(user);
+    // Check if suspended
+    const suspended = await checkIfSuspended(user.uid);
+    if(suspended) {
+      await signOut(auth);
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('auth-error').textContent = '🚫 Tu cuenta ha sido suspendida. Contactá al administrador.';
+      document.getElementById('auth-error').style.color = 'var(--danger)';
+      return;
+    }
     await loadFromFirestore();
     render();
     updateCounts();
@@ -123,6 +133,16 @@ window.logout = async function() {
 
 function setAuthError(msg) {
   document.getElementById('auth-error').textContent = msg;
+}
+
+// ===================== CHECK SUSPENSION =====================
+async function checkIfSuspended(uid) {
+  try {
+    const snap = await getDoc(doc(db, 'admin', 'suspended'));
+    if(!snap.exists()) return false;
+    const users = snap.data().users || {};
+    return !!users[uid];
+  } catch(e) { return false; }
 }
 
 // ===================== SAVE USER PROFILE =====================
