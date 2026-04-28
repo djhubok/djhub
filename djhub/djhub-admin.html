@@ -217,6 +217,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);line
 
       <!-- USERS -->
       <div class="page" id="page-users">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button onclick="showCreateUser()" style="display:flex;align-items:center;gap:8px;background:var(--acc);color:#06060a;border:none;border-radius:9px;padding:10px 18px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer">
+            + Crear usuario
+          </button>
+        </div>
         <div class="user-table" id="users-table"></div>
       </div>
 
@@ -269,6 +274,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);line
 
     </div>
   </main>
+</div>
+
+<!-- CREATE USER MODAL -->
+<div class="overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Crear nuevo DJ</span>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Creá la cuenta del DJ. Le podés pasar el email y contraseña para que ingrese.</p>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Email</label>
+        <input id="new-email" type="email" placeholder="dj@ejemplo.com" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Contraseña</label>
+        <input id="new-pass" type="text" placeholder="Mínimo 6 caracteres" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      </div>
+      <div id="create-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;min-height:18px"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeCreateModal()">Cancelar</button>
+        <button class="btn-confirm restore" onclick="createUser()">Crear cuenta</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -493,7 +524,7 @@ function renderUsers() {
             ? `<button class="action-btn restore" onclick="showModal('restore','${u.uid}','${u.name}')">Restaurar</button>`
             : `<button class="action-btn danger" onclick="showModal('suspend','${u.uid}','${u.name}')">Suspender</button>`
           }
-          <button class="action-btn danger" onclick="showModal('delete','${u.uid}','${u.name}')" style="border-color:rgba(255,107,107,.3)">Eliminar</button>
+          ${u.provider !== 'google' ? `<button class="action-btn danger" onclick="showModal('delete','${u.uid}','${u.name}')" style="border-color:rgba(255,107,107,.3)">Eliminar</button>` : ''}
         </div>
       </div>`;
     }).join('')}`;
@@ -525,7 +556,7 @@ window.openDetail = function(uid) {
           ? `<button class="action-btn restore" style="padding:8px 18px;font-size:13px" onclick="showModal('restore','${uid}','${u.name}')">Restaurar acceso</button>`
           : `<button class="action-btn danger" style="padding:8px 18px;font-size:13px" onclick="showModal('suspend','${uid}','${u.name}')">Suspender usuario</button>`
         }
-        <button class="action-btn danger" style="padding:8px 18px;font-size:13px;margin-left:8px;border-color:rgba(255,107,107,.3)" onclick="showModal('delete','${uid}','${u.name}')">Eliminar cuenta</button>
+        ${u.provider !== 'google' ? `<button class="action-btn danger" style="padding:8px 18px;font-size:13px;margin-left:8px;border-color:rgba(255,107,107,.3)" onclick="showModal('delete','${uid}','${u.name}')">Eliminar cuenta</button>` : ''}
       </div>
     </div>
     <div class="detail-stats">
@@ -765,6 +796,49 @@ window.resetTheme = function() {
   applyPreview(currentTheme||{});
   document.getElementById('apply-bar').style.display = 'none';
   renderTheme();
+};
+
+// ===================== CREATE USER =====================
+window.showCreateUser = function() {
+  document.getElementById('new-email').value = '';
+  document.getElementById('new-pass').value = '';
+  document.getElementById('create-error').textContent = '';
+  document.getElementById('create-modal').classList.add('open');
+};
+
+window.closeCreateModal = function() {
+  document.getElementById('create-modal').classList.remove('open');
+};
+
+window.createUser = async function() {
+  const email = document.getElementById('new-email').value.trim();
+  const pass = document.getElementById('new-pass').value;
+  const errEl = document.getElementById('create-error');
+  if(!email || !pass) { errEl.textContent = 'Completá email y contraseña.'; return; }
+  if(pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+  
+  try {
+    // Create via Firebase Auth REST API (doesn't affect current admin session)
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyB0GtTsBbaRkhubslOzmHd-1VhX8hkL5oI`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass, returnSecureToken: false })
+    });
+    const data = await res.json();
+    if(data.error) { errEl.textContent = 'Error: ' + (data.error.message || 'No se pudo crear la cuenta'); return; }
+    
+    // Save user profile in Firestore
+    const uid = data.localId;
+    await setDoc(doc(db, 'users', uid), {
+      uid, email, name: email, lastLogin: '', createdAt: new Date().toISOString()
+    });
+    
+    closeCreateModal();
+    await loadAll();
+    alert(`✅ Cuenta creada exitosamente.\n\nEmail: ${email}\nContraseña: ${pass}\n\nPasale estos datos al DJ.`);
+  } catch(e) {
+    errEl.textContent = 'Error al crear: ' + e.message;
+  }
 };
 
 // Expose goto globally
