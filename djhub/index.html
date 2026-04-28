@@ -55,11 +55,16 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
-    // Show change password only for email/password users (not Google)
-    const isEmailUser = !user.email?.toLowerCase().includes('@gmail.com') && 
-                        user.providerData?.every(p => p.providerId !== 'google.com');
-    const cpBtn = document.getElementById('change-pass-btn');
-    if(cpBtn) cpBtn.style.display = isEmailUser ? '' : 'none';
+    // Read provider from Firestore to show/hide change password button
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const provider = userDoc.exists() ? userDoc.data().provider : 'google';
+      const cpBtn = document.getElementById('change-pass-btn');
+      if(cpBtn) cpBtn.style.display = (provider === 'email') ? '' : 'none';
+    } catch(e) {
+      const cpBtn = document.getElementById('change-pass-btn');
+      if(cpBtn) cpBtn.style.display = 'none';
+    }
     await saveUserProfile(user);
     // Check if suspended
     const suspended = await checkIfSuspended(user.uid);
