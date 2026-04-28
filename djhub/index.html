@@ -1072,8 +1072,11 @@ const PREF_GENRES_KEY = 'djhub_pref_genres';
 const GENRES_CACHE_KEY = 'djhub_saved_genres';
 function getCurrentCurrency() { return localStorage.getItem(CURRENCY_KEY) || 'ARS'; }
 function getNotifEnabled() { const v=localStorage.getItem(NOTIF_KEY); return v===null?true:v==='true'; }
-function getPrefGenres() { try{return JSON.parse(localStorage.getItem(PREF_GENRES_KEY))||[];}catch(e){return[];} }
-function getSavedGenres() { try{return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY))||[];}catch(e){return[];} }
+function getUid() { return currentUser?.uid || localStorage.getItem('djhub_last_uid') || ''; }
+function getPrefGenres() { try{return JSON.parse(localStorage.getItem(PREF_GENRES_KEY+'_'+getUid()))||[];}catch(e){return[];} }
+function getSavedGenres() { try{return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY+'_'+getUid()))||[];}catch(e){return[];} }
+function savePrefGenresLocal(g) { try{localStorage.setItem(PREF_GENRES_KEY+'_'+getUid(), JSON.stringify(g));}catch(e){} }
+function saveGenresCache(g) { try{localStorage.setItem(GENRES_CACHE_KEY+'_'+getUid(), JSON.stringify(g));}catch(e){} }
 function fmtM(n) { const sym=CURRENCY_SYMBOLS[getCurrentCurrency()]||'$'; return sym+Math.round(n).toLocaleString('es-AR'); }
 
 // Settings constants — defined early so all functions can access them
@@ -1409,7 +1412,7 @@ function saveGenreToHistory(genre) {
   if(!saved.includes(genre)) {
     saved.unshift(genre);
     if(saved.length > 30) saved.pop(); // keep max 30
-    try { localStorage.setItem(GENRES_CACHE_KEY, JSON.stringify(saved)); } catch(e) {}
+    try { saveGenresCache(saved); } catch(e) {}
   }
   updateGenreDatalist();
 }
@@ -1832,21 +1835,21 @@ function renderNotifUI(enabled) {
 // ===================== SETTINGS: PREFERRED GENRES =====================
 
 function savePrefGenres(genres) {
-  localStorage.setItem(PREF_GENRES_KEY, JSON.stringify(genres));
+  savePrefGenresLocal(genres);
   // Merge with saved genres history so they appear first in datalist
   const existing = getSavedGenres();
   const merged = [...genres, ...existing.filter(g => !genres.includes(g))];
-  localStorage.setItem(GENRES_CACHE_KEY, JSON.stringify(merged));
+  saveGenresCache(merged);
   updateGenreDatalist();
 }
 
 window.clearGenreHistory = function() {
   if(!confirm('¿Limpiar el historial de sugerencias? Los géneros principales no se borran.')) return;
-  localStorage.removeItem(GENRES_CACHE_KEY);
+  localStorage.removeItem(GENRES_CACHE_KEY+'_'+getUid());
   updateGenreDatalist();
   // Rebuild from preferred genres only
   const pref = getPrefGenres();
-  if(pref.length) localStorage.setItem(GENRES_CACHE_KEY, JSON.stringify(pref));
+  if(pref.length) saveGenresCache(pref);
 };
 
 window.addPrefGenre = function() {
