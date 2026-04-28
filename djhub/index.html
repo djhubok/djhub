@@ -91,9 +91,15 @@ onAuthStateChanged(auth, async (user) => {
     window._suspensionInterval = setInterval(async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if(userDoc.exists() && userDoc.data().suspended === true) {
+        // Sign out if: suspended OR document deleted
+        if(!userDoc.exists() || userDoc.data().deleted === true) {
           clearInterval(window._suspensionInterval);
           await signOut(auth);
+          document.getElementById('auth-error').textContent = '❌ Tu cuenta fue eliminada. Contactá al administrador.';
+        } else if(userDoc.data().suspended === true) {
+          clearInterval(window._suspensionInterval);
+          await signOut(auth);
+          document.getElementById('auth-error').textContent = '🚫 Tu cuenta ha sido suspendida. Contactá al administrador.';
         }
       } catch(e) {}
     }, 30000);
@@ -175,8 +181,22 @@ async function checkIfSuspended(uid) {
 // ===================== SAVE USER PROFILE =====================
 async function saveUserProfile(user) {
   try {
-    // Only set provider if not already set in Firestore (to avoid overwriting admin-created accounts)
     const existing = await getDoc(doc(db, 'users', user.uid));
+    // If user was deleted or suspended, sign out and show appropriate message
+    if(existing.exists() && existing.data().deleted === true) {
+      await signOut(auth);
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('auth-error').textContent = '❌ Tu cuenta fue eliminada. Contactá al administrador.';
+      return;
+    }
+    if(existing.exists() && existing.data().suspended === true) {
+      await signOut(auth);
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('auth-error').textContent = '🚫 Tu cuenta ha sido suspendida. Contactá al administrador.';
+      return;
+    }
     const existingProvider = existing.exists() ? existing.data().provider : null;
     const provider = existingProvider || (user.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email');
     await setDoc(doc(db, 'users', user.uid), {
