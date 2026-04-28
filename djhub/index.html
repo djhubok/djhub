@@ -102,7 +102,7 @@ onAuthStateChanged(auth, async (user) => {
           document.getElementById('auth-error').textContent = '🚫 Tu cuenta ha sido suspendida. Contactá al administrador.';
         }
       } catch(e) {}
-    }, 30000);
+    }, 10000);
   } else {
     currentUser = null;
     events = [];
