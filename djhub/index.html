@@ -1197,16 +1197,25 @@ function globalStats() {
 }
 
 // NAVIGATION
-function goto(p) {
+ function goto(p) {
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  document.getElementById('nav-'+(p==='detail'?'lugares':p==='ganancias'?'ganancias':p)).classList.add('active');
-  const heads = { agenda:'Agenda', lugares:'Lugares', ganancias:'Ganancias', detail:'Detalle' };
+  const navMap = {detail:'lugares',ganancias:'ganancias',ajustes:'ajustes',agenda:'agenda',lugares:'lugares'};
+  const nb = document.getElementById('nav-'+(navMap[p]||p));
+  if(nb) nb.classList.add('active');
+  const heads = { agenda:'Agenda', lugares:'Lugares', ganancias:'Ganancias', detail:'Detalle', ajustes:'Ajustes' };
   document.getElementById('page-heading').innerHTML = heads[p]||p;
   document.getElementById('topbar-actions').style.display = p==='agenda' ? '' : 'none';
   if(p==='lugares') renderVenues();
   if(p==='ganancias') renderAnalytics();
+  if(p==='ajustes') {
+    renderCurrencyUI(getCurrentCurrency());
+    renderNotifUI(getNotifEnabled());
+    renderPrefGenres();
+    renderAjustes();
+    setTimeout(renderAjustes, 100);
+  }
 }
 
 function gotoDetail(name) {
