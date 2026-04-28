@@ -86,6 +86,17 @@ onAuthStateChanged(auth, async (user) => {
     render();
     updateCounts();
     setupNotifications();
+    // Start suspension check interval for this session
+    if(window._suspensionInterval) clearInterval(window._suspensionInterval);
+    window._suspensionInterval = setInterval(async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if(userDoc.exists() && userDoc.data().suspended === true) {
+          clearInterval(window._suspensionInterval);
+          await signOut(auth);
+        }
+      } catch(e) {}
+    }, 30000);
   } else {
     currentUser = null;
     events = [];
@@ -1369,17 +1380,7 @@ if('Notification' in window&&Notification.permission==='default') Notification.r
 // load() is triggered by Firebase onAuthStateChanged
 setupNotifications();
 
-// Check suspension every 30 seconds — reads from user's own doc (always allowed)
-setInterval(async () => {
-  const activeUser = currentUser || auth.currentUser;
-  if(!activeUser) return;
-  try {
-    const userDoc = await getDoc(doc(db, 'users', activeUser.uid));
-    if(userDoc.exists() && userDoc.data().suspended === true) {
-      await signOut(auth);
-    }
-  } catch(e) {}
-}, 30000);
+
 
 // TOGGLE PASSWORD VISIBILITY
 window.togglePass = function(inputId, eyeId) {
