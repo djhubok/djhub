@@ -61,31 +61,42 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
-    // Read provider from Firestore to show/hide change password button
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const provider = userDoc.exists() ? userDoc.data().provider : 'google';
-      const cpBtn = document.getElementById('change-pass-btn');
-      if(cpBtn) cpBtn.style.display = (provider === 'email') ? '' : 'none';
-    } catch(e) {
-      const cpBtn = document.getElementById('change-pass-btn');
-      if(cpBtn) cpBtn.style.display = 'none';
+    // Run ALL checks in parallel — much faster than sequential
+    const [userDoc, blacklistDoc, suspendedDoc, eventsSnap] = await Promise.all([
+      getDoc(doc(db, 'users', user.uid)).catch(()=>null),
+      getDoc(doc(db, 'admin', 'blacklist')).catch(()=>null),
+      getDoc(doc(db, 'admin', 'suspended')).catch(()=>null),
+      getDocs(query(collection(db, 'events'), where('userId', '==', user.uid))).catch(()=>null)
+    ]);
+
+    // Check blacklist
+    if(blacklistDoc?.exists()) {
+      const blocked = blacklistDoc.data().emails || [];
+      if(blocked.includes((user.email||'').toLowerCase())) {
+        await signOut(auth); document.getElementById('auth-screen').style.display='flex'; document.getElementById('app-screen').style.display='none';
+        document.getElementById('auth-error').textContent='❌ Tu cuenta fue eliminada. Contactá al administrador.'; return;
+      }
     }
-    await saveUserProfile(user);
-    // Check if suspended
-    const suspended = await checkIfSuspended(user.uid);
-    if(suspended) {
-      await signOut(auth);
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app-screen').style.display = 'none';
-      document.getElementById('auth-error').textContent = '🚫 Tu cuenta ha sido suspendida. Contactá al administrador.';
-      document.getElementById('auth-error').style.color = 'var(--danger)';
-      return;
+    // Check suspended doc
+    if(suspendedDoc?.exists() && suspendedDoc.data().users?.[user.uid]) {
+      await signOut(auth); document.getElementById('auth-screen').style.display='flex'; document.getElementById('app-screen').style.display='none';
+      document.getElementById('auth-error').textContent='🚫 Tu cuenta ha sido suspendida. Contactá al administrador.'; document.getElementById('auth-error').style.color='var(--danger)'; return;
     }
-    await loadFromFirestore();
-    render();
-    updateCounts();
-    setupNotifications();
+    // Check user doc flags
+    if(userDoc?.exists()) {
+      const d = userDoc.data();
+      if(d.deleted) { await signOut(auth); document.getElementById('auth-screen').style.display='flex'; document.getElementById('app-screen').style.display='none'; document.getElementById('auth-error').textContent='❌ Tu cuenta fue eliminada. Contactá al administrador.'; return; }
+      if(d.suspended) { await signOut(auth); document.getElementById('auth-screen').style.display='flex'; document.getElementById('app-screen').style.display='none'; document.getElementById('auth-error').textContent='🚫 Tu cuenta ha sido suspendida. Contactá al administrador.'; return; }
+    }
+    // Change password button
+    const userProvider = userDoc?.exists() ? (userDoc.data().provider||'google') : 'google';
+    const cpBtn = document.getElementById('change-pass-btn');
+    if(cpBtn) cpBtn.style.display = (userProvider==='email') ? '' : 'none';
+    // Use already-fetched events — no extra Firestore call needed
+    if(eventsSnap) events = eventsSnap.docs.map(d=>({...d.data(),id:d.id}));
+    // Save profile in background — don't block UI
+    saveUserProfile(user);
+    render(); updateCounts(); setupNotifications();
     // Start suspension check interval for this session
     if(window._suspensionInterval) clearInterval(window._suspensionInterval);
     window._suspensionInterval = setInterval(async () => {
