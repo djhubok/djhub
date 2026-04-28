@@ -816,28 +816,38 @@ window.createUser = async function() {
   const errEl = document.getElementById('create-error');
   if(!email || !pass) { errEl.textContent = 'Completá email y contraseña.'; return; }
   if(pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-  
+
   try {
-    // Create via Firebase Auth REST API (doesn't affect current admin session)
-    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyB0GtTsBbaRkhubslOzmHd-1VhX8hkL5oI`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pass, returnSecureToken: false })
-    });
-    const data = await res.json();
-    if(data.error) { errEl.textContent = 'Error: ' + (data.error.message || 'No se pudo crear la cuenta'); return; }
+    // Use secondary Firebase app to create user without affecting admin session
+    const { initializeApp: initApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2, signOut: signOut2 } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    
+    const secondaryApp = initApp(firebaseConfig, 'secondary-' + Date.now());
+    const secondaryAuth = getAuth2(secondaryApp);
+    
+    const cred = await createUser2(secondaryAuth, email, pass);
+    const uid = cred.user.uid;
+    await signOut2(secondaryAuth);
     
     // Save user profile in Firestore
-    const uid = data.localId;
     await setDoc(doc(db, 'users', uid), {
-      uid, email, name: email, lastLogin: '', createdAt: new Date().toISOString()
+      uid, email, name: email, provider: 'email', lastLogin: '', createdAt: new Date().toISOString()
     });
     
     closeCreateModal();
     await loadAll();
-    alert(`✅ Cuenta creada exitosamente.\n\nEmail: ${email}\nContraseña: ${pass}\n\nPasale estos datos al DJ.`);
+    alert(`✅ Cuenta creada exitosamente.
+
+Email: ${email}
+Contraseña: ${pass}
+
+Pasale estos datos al DJ.`);
   } catch(e) {
-    errEl.textContent = 'Error al crear: ' + e.message;
+    if(e.code === 'auth/email-already-in-use') {
+      errEl.textContent = 'Ese email ya tiene una cuenta registrada.';
+    } else {
+      errEl.textContent = 'Error al crear: ' + e.message;
+    }
   }
 };
 
