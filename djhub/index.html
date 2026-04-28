@@ -890,7 +890,10 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time"></div>
       </div>
       <div class="fg">
-        <label class="fl">Géneros del set</label>
+        <label class="fl" style="display:flex;align-items:center;justify-content:space-between">
+          Géneros del set
+          <span onclick="clearGenreHistoryInline()" style="font-size:10px;color:var(--dim);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:400;text-transform:none;letter-spacing:0" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--dim)'">🗑 Limpiar sugerencias</span>
+        </label>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input class="fi" id="f-genre-input" placeholder="Ej: reggaeton, cumbia, guaracha…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addGenre()}" list="saved-genres-list">
           <datalist id="saved-genres-list"></datalist>
@@ -1300,6 +1303,15 @@ function renderAnalytics() {
 
 // ===================== SAVED GENRES =====================
 
+
+window.clearGenreHistoryInline = function() {
+  const uid = getUid();
+  if(uid) localStorage.removeItem(GENRES_CACHE_KEY+'_'+uid);
+  else localStorage.removeItem(GENRES_CACHE_KEY);
+  updateGenreDatalist();
+  document.getElementById('f-genre-input').placeholder = 'Historial limpiado ✓';
+  setTimeout(() => { const el = document.getElementById('f-genre-input'); if(el) el.placeholder = 'Ej: reggaeton, cumbia, guaracha…'; }, 2000);
+};
 
 function saveGenreToHistory(genre) {
   const saved = getSavedGenres();
