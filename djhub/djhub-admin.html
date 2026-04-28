@@ -291,7 +291,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);line
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ===================== CONFIG =====================
 const ADMIN_EMAIL = 'djhubok@gmail.com'; // TU EMAIL — solo este puede entrar
@@ -493,6 +493,7 @@ function renderUsers() {
             ? `<button class="action-btn restore" onclick="showModal('restore','${u.uid}','${u.name}')">Restaurar</button>`
             : `<button class="action-btn danger" onclick="showModal('suspend','${u.uid}','${u.name}')">Suspender</button>`
           }
+          <button class="action-btn danger" onclick="showModal('delete','${u.uid}','${u.name}')" style="border-color:rgba(255,107,107,.3)">Eliminar</button>
         </div>
       </div>`;
     }).join('')}`;
@@ -524,6 +525,7 @@ window.openDetail = function(uid) {
           ? `<button class="action-btn restore" style="padding:8px 18px;font-size:13px" onclick="showModal('restore','${uid}','${u.name}')">Restaurar acceso</button>`
           : `<button class="action-btn danger" style="padding:8px 18px;font-size:13px" onclick="showModal('suspend','${uid}','${u.name}')">Suspender usuario</button>`
         }
+        <button class="action-btn danger" style="padding:8px 18px;font-size:13px;margin-left:8px;border-color:rgba(255,107,107,.3)" onclick="showModal('delete','${uid}','${u.name}')">Eliminar cuenta</button>
       </div>
     </div>
     <div class="detail-stats">
@@ -552,14 +554,24 @@ window.openDetail = function(uid) {
 // ===================== SUSPEND / RESTORE =====================
 window.showModal = function(action, uid, name) {
   modalAction = { action, uid, name };
-  const isSusp = action==='suspend';
-  document.getElementById('modal-title').textContent = isSusp ? 'Suspender usuario' : 'Restaurar acceso';
-  document.getElementById('modal-text').innerHTML = isSusp
-    ? `¿Querés suspender a <b>${name}</b>? El usuario va a ver un mensaje de acceso bloqueado la próxima vez que intente entrar a DJHub. Sus datos se conservan.`
-    : `¿Querés restaurar el acceso de <b>${name}</b>? Podrá volver a usar DJHub normalmente.`;
   const btn = document.getElementById('modal-confirm');
-  btn.textContent = isSusp ? 'Suspender' : 'Restaurar';
-  btn.className = isSusp ? 'btn-confirm' : 'btn-confirm restore';
+  if(action === 'suspend') {
+    document.getElementById('modal-title').textContent = 'Suspender usuario';
+    document.getElementById('modal-text').innerHTML = `¿Querés suspender a <b>${name}</b>? El usuario va a ver un mensaje de acceso bloqueado. Sus datos se conservan.`;
+    btn.textContent = 'Suspender';
+    btn.className = 'btn-confirm';
+  } else if(action === 'restore') {
+    document.getElementById('modal-title').textContent = 'Restaurar acceso';
+    document.getElementById('modal-text').innerHTML = `¿Querés restaurar el acceso de <b>${name}</b>? Podrá volver a usar DJHub normalmente.`;
+    btn.textContent = 'Restaurar';
+    btn.className = 'btn-confirm restore';
+  } else if(action === 'delete') {
+    document.getElementById('modal-title').textContent = '⚠️ Eliminar cuenta';
+    document.getElementById('modal-text').innerHTML = `¿Estás seguro que querés eliminar la cuenta de <b>${name}</b>?<br><br><span style="color:var(--danger);font-size:13px">Esta acción es <b>irreversible</b>. Se van a borrar todos sus eventos y datos de la plataforma permanentemente.</span>`;
+    btn.textContent = 'Sí, eliminar permanentemente';
+    btn.className = 'btn-confirm';
+    btn.style.background = 'var(--danger)';
+  }
   document.getElementById('modal').classList.add('open');
 };
 
@@ -568,6 +580,26 @@ window.closeModal = function() { document.getElementById('modal').classList.remo
 window.confirmAction = async function() {
   if(!modalAction) return;
   const { action, uid } = modalAction;
+  
+  if(action === 'delete') {
+    try {
+      // Delete all events for this user
+      const userEvents = allEvents.filter(e => e.userId === uid);
+      for(const ev of userEvents) {
+        await deleteDoc(doc(db, 'events', ev.id));
+      }
+      // Delete user profile
+      await deleteDoc(doc(db, 'users', uid));
+      // Remove from suspended if present
+      delete suspendedUsers[uid];
+      await setDoc(doc(db, 'admin', 'suspended'), { users: suspendedUsers });
+      closeModal();
+      await loadAll();
+      goto('users');
+    } catch(e) { console.error('Delete error:', e); alert('Error al eliminar: ' + e.message); }
+    return;
+  }
+  
   if(action==='suspend') suspendedUsers[uid] = true;
   else delete suspendedUsers[uid];
   try {
