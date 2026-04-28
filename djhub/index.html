@@ -27,6 +27,9 @@ const googleProvider = new GoogleAuthProvider();
 // Expose to window so functions outside module can access
 window._auth = auth;
 window._db = db;
+window._setDoc = setDoc;
+window._doc = doc;
+window._getDoc = getDoc;
 window._EmailAuthProvider = EmailAuthProvider;
 window._reauthenticateWithCredential = reauthenticateWithCredential;
 window._updatePassword = updatePassword;
@@ -1616,7 +1619,8 @@ window.handlePhotoUpload = function(input) {
     const letter = document.getElementById('aj-avatar-letter');
     if(img) { img.src=dataUrl; img.style.display='block'; if(letter) letter.style.display='none'; }
     // Save to Firestore
-    if(currentUser) setDoc(doc(db,'users',currentUser.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
+    const _u = (window._auth||auth).currentUser;
+    if(_u) (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
   };
   reader.readAsDataURL(file);
 };
@@ -1640,13 +1644,14 @@ window.saveName = async function() {
   const msg = document.getElementById('aj-name-msg');
   if(!name) { msg.textContent='Escribí un nombre.'; msg.style.color='var(--danger)'; return; }
   try {
-    localStorage.setItem('djhub_name_'+currentUser.uid, name);
-    await setDoc(doc(db,'users',currentUser.uid),{name},{merge:true});
+    const uid = (window._auth||auth).currentUser.uid;
+    localStorage.setItem('djhub_name_'+uid, name);
+    await (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',uid),{name},{merge:true});
     document.getElementById('aj-display-name').textContent = name;
     updateSidebarAvatar(null, name);
     msg.textContent='✓ Nombre guardado.'; msg.style.color='var(--paid)';
     setTimeout(()=>msg.textContent='',2500);
-  } catch(e) { msg.textContent='Error al guardar.'; msg.style.color='var(--danger)'; }
+  } catch(e) { msg.textContent='Error: '+e.message; msg.style.color='var(--danger)'; }
 };
 
 window.savePassword = async function() {
