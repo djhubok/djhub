@@ -1072,7 +1072,7 @@ const PREF_GENRES_KEY = 'djhub_pref_genres';
 const GENRES_CACHE_KEY = 'djhub_saved_genres';
 function getCurrentCurrency() { return localStorage.getItem(CURRENCY_KEY) || 'ARS'; }
 function getNotifEnabled() { const v=localStorage.getItem(NOTIF_KEY); return v===null?true:v==='true'; }
-function getUid() { return currentUser?.uid || localStorage.getItem('djhub_last_uid') || ''; }
+function getUid() { return window._auth?.currentUser?.uid || localStorage.getItem('djhub_last_uid') || ''; }
 function getPrefGenres() { try{return JSON.parse(localStorage.getItem(PREF_GENRES_KEY+'_'+getUid()))||[];}catch(e){return[];} }
 function getSavedGenres() { try{return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY+'_'+getUid()))||[];}catch(e){return[];} }
 function savePrefGenresLocal(g) { try{localStorage.setItem(PREF_GENRES_KEY+'_'+getUid(), JSON.stringify(g));}catch(e){} }
