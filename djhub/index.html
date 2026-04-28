@@ -1072,7 +1072,7 @@ const PREF_GENRES_KEY = 'djhub_pref_genres';
 const GENRES_CACHE_KEY = 'djhub_saved_genres';
 function getCurrentCurrency() { return localStorage.getItem(CURRENCY_KEY) || 'ARS'; }
 function getNotifEnabled() { const v=localStorage.getItem(NOTIF_KEY); return v===null?true:v==='true'; }
-function getUid() { return window._auth?.currentUser?.uid || localStorage.getItem('djhub_last_uid') || ''; }
+function getUid() { return window._auth?.currentUser?.uid || ''; }
 function getPrefGenres() { try{return JSON.parse(localStorage.getItem(PREF_GENRES_KEY+'_'+getUid()))||[];}catch(e){return[];} }
 function getSavedGenres() { try{return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY+'_'+getUid()))||[];}catch(e){return[];} }
 function savePrefGenresLocal(g) { try{localStorage.setItem(PREF_GENRES_KEY+'_'+getUid(), JSON.stringify(g));}catch(e){} }
@@ -1663,7 +1663,7 @@ setupNotifications();
 
 // ===================== AJUSTES =====================
 function renderAjustes() {
-  const uid = (window._auth?.currentUser?.uid) || localStorage.getItem('djhub_last_uid');
+  const uid = window._auth?.currentUser?.uid || '';
   if(!uid) return;
 
   // Always read from localStorage — most reliable source
@@ -1856,7 +1856,7 @@ window.addPrefGenre = function() {
   const inp = document.getElementById('pref-genre-input');
   const raw = inp.value.trim().toLowerCase();
   if(!raw) return;
-  const uid = (window._auth?.currentUser?.uid) || localStorage.getItem('djhub_last_uid');
+  const uid = window._auth?.currentUser?.uid || '';
   if(!uid) { alert('Error: no hay usuario activo.'); return; }
   const genres = getPrefGenres();
   raw.split(',').map(g=>g.trim()).filter(Boolean).forEach(g => {
