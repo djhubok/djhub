@@ -151,15 +151,7 @@ window.loginEmail = async function() {
   const pass  = document.getElementById('auth-pass').value;
   if (!email || !pass) { setAuthError('Completá email y contraseña.'); return; }
   try {
-    // Check blacklist before allowing login
-    const blacklistDoc = await getDoc(doc(db, 'admin', 'blacklist'));
-    if(blacklistDoc.exists()) {
-      const blocked = blacklistDoc.data().emails || [];
-      if(blocked.includes(email)) {
-        setAuthError('❌ Tu cuenta fue eliminada. Contactá al administrador.');
-        return;
-      }
-    }
+    // Try login first
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
@@ -192,14 +184,21 @@ async function checkIfSuspended(uid) {
 async function saveUserProfile(user) {
   try {
     const existing = await getDoc(doc(db, 'users', user.uid));
-    // If user was deleted or suspended, sign out and show appropriate message
-    if(existing.exists() && existing.data().deleted === true) {
-      await signOut(auth);
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app-screen').style.display = 'none';
-      document.getElementById('auth-error').textContent = '❌ Tu cuenta fue eliminada. Contactá al administrador.';
-      return;
-    }
+    // Check blacklist (works after login when user is authenticated)
+    try {
+      const blacklistDoc = await getDoc(doc(db, 'admin', 'blacklist'));
+      if(blacklistDoc.exists()) {
+        const blocked = blacklistDoc.data().emails || [];
+        if(blocked.includes((user.email || '').toLowerCase())) {
+          await signOut(auth);
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app-screen').style.display = 'none';
+          document.getElementById('auth-error').textContent = '❌ Tu cuenta fue eliminada. Contactá al administrador.';
+          return;
+        }
+      }
+    } catch(e) {}
+    // If user was suspended, sign out and show appropriate message
     if(existing.exists() && existing.data().suspended === true) {
       await signOut(auth);
       document.getElementById('auth-screen').style.display = 'flex';
