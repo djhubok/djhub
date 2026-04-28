@@ -1330,33 +1330,30 @@ function renderGenreTags() {
   if(!keys.length) { container.innerHTML = ''; return; }
 
   container.innerHTML = keys.map((g, idx) => {
-    const r = genreRatings[g];
-    const si = r==='funciono' ? 'border:1px solid var(--paid);background:rgba(109,255,158,.12);color:var(--paid)'    : 'border:1px solid var(--b1);background:var(--s3);color:var(--muted)';
-    const sp = r==='parcial'  ? 'border:1px solid var(--pend);background:rgba(255,209,102,.12);color:var(--pend)'   : 'border:1px solid var(--b1);background:var(--s3);color:var(--muted)';
-    const sn = r==='no'       ? 'border:1px solid var(--danger);background:rgba(255,107,107,.12);color:var(--danger)': 'border:1px solid var(--b1);background:var(--s3);color:var(--muted)';
-    return '<div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px 12px">'
-      + '<span style="flex:1;font-size:13px;font-weight:500">' + g + '</span>'
-      + '<div style="display:flex;gap:5px">'
-      + '<div data-gi="' + idx + '" data-gr="funciono" class="grbtn" style="font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .15s;' + si + '">✓ Funcionó</div>'
-      + '<div data-gi="' + idx + '" data-gr="parcial"  class="grbtn" style="font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .15s;' + sp + '">~ Más o menos</div>'
-      + '<div data-gi="' + idx + '" data-gr="no"       class="grbtn" style="font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .15s;' + sn + '">✗ No funcionó</div>'
+    const val = typeof genreRatings[g] === 'number' ? genreRatings[g] : 50;
+    const lbl = ratingToLabel(val);
+    return '<div class="genre-row">'
+      + '<span class="genre-label">' + g + '</span>'
+      + '<div class="genre-slider-wrap">'
+      + '<input type="range" class="genre-slider" min="0" max="100" value="' + val + '" data-gi="' + idx + '">'
+      + '<div class="genre-slider-labels"><span class="genre-slider-lbl">No funcionó</span><span class="genre-slider-lbl">Funcionó</span></div>'
       + '</div>'
-      + '<div data-gi="' + idx + '" class="grdel" style="color:var(--dim);cursor:pointer;font-size:22px;line-height:1;padding:0 6px;transition:color .15s" title="Eliminar">×</div>'
+      + '<span class="genre-rating-txt" id="grt-' + idx + '" style="color:' + lbl.color + '">' + lbl.text + '</span>'
+      + '<span class="genre-del" data-gi="' + idx + '">×</span>'
       + '</div>';
   }).join('');
 
-  // Attach events after render — avoids all quote/escaping issues
   const currentKeys = Object.keys(genreRatings);
-  container.querySelectorAll('.grbtn').forEach(el => {
-    el.addEventListener('click', () => {
-      const g = currentKeys[+el.dataset.gi];
-      genreRatings[g] = genreRatings[g] === el.dataset.gr ? null : el.dataset.gr;
-      renderGenreTags();
+  container.querySelectorAll('.genre-slider').forEach(slider => {
+    slider.addEventListener('input', () => {
+      const g = currentKeys[+slider.dataset.gi];
+      genreRatings[g] = parseInt(slider.value);
+      const lbl = ratingToLabel(slider.value);
+      const txt = document.getElementById('grt-' + slider.dataset.gi);
+      if(txt) { txt.textContent = lbl.text; txt.style.color = lbl.color; }
     });
   });
-  container.querySelectorAll('.grdel').forEach(el => {
-    el.addEventListener('mouseenter', () => el.style.color = 'var(--danger)');
-    el.addEventListener('mouseleave', () => el.style.color = 'var(--dim)');
+  container.querySelectorAll('.genre-del').forEach(el => {
     el.addEventListener('click', () => {
       const g = currentKeys[+el.dataset.gi];
       delete genreRatings[g];
