@@ -60,6 +60,7 @@ let currentUser = null;
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
+    localStorage.setItem('djhub_last_uid', user.uid);
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
     const savedName = localStorage.getItem('djhub_name_'+user.uid) || user.displayName || user.email || '';
@@ -1632,12 +1633,14 @@ setupNotifications();
 
 // ===================== AJUSTES =====================
 function renderAjustes() {
-  if(!currentUser) return;
-  const uid = currentUser.uid;
+  const uid = currentUser?.uid || localStorage.getItem('djhub_last_uid');
+  if(!uid) return;
 
-  // Show cached data IMMEDIATELY
-  const cachedPhoto = localStorage.getItem('djhub_photo_'+uid) || currentUser.photoURL || null;
-  const cachedName = localStorage.getItem('djhub_name_'+uid) || currentUser.displayName || currentUser.email || '';
+  // Read from sidebar first (already loaded), then localStorage
+  const sidebarName = document.getElementById('user-name')?.textContent || '';
+  const sidebarImg = document.getElementById('user-avatar')?.querySelector('img')?.src || null;
+  const cachedPhoto = sidebarImg || localStorage.getItem('djhub_photo_'+uid) || currentUser?.photoURL || null;
+  const cachedName = sidebarName || localStorage.getItem('djhub_name_'+uid) || currentUser?.displayName || currentUser?.email || '';
   applyAjustesUI(cachedPhoto, cachedName, null);
 
   // Then update from Firestore in background
