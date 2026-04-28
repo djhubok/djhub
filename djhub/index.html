@@ -63,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
     const savedName = localStorage.getItem('djhub_name_'+user.uid) || user.displayName || user.email || '';
-    const savedPhoto = user.photoURL || localStorage.getItem('djhub_photo_'+user.uid);
+    const savedPhoto = localStorage.getItem('djhub_photo_'+user.uid) || user.photoURL;
     document.getElementById('user-name').textContent = savedName;
     if(savedPhoto) {
       document.getElementById('user-avatar').innerHTML = '<img src="'+savedPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
@@ -1581,7 +1581,7 @@ setupNotifications();
 function renderAjustes() {
   if(!currentUser) return;
   // Avatar
-  const photoURL = currentUser.photoURL || localStorage.getItem('djhub_photo_'+currentUser.uid);
+  const photoURL = localStorage.getItem('djhub_photo_'+currentUser.uid) || currentUser.photoURL;
   const img = document.getElementById('aj-avatar-img');
   const letter = document.getElementById('aj-avatar-letter');
   const wrap = document.getElementById('aj-avatar-wrap');
