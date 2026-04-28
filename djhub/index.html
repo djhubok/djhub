@@ -1856,13 +1856,20 @@ window.addPrefGenre = function() {
   const inp = document.getElementById('pref-genre-input');
   const raw = inp.value.trim().toLowerCase();
   if(!raw) return;
+  const uid = currentUser?.uid || localStorage.getItem('djhub_last_uid');
+  if(!uid) { alert('Error: no hay usuario activo.'); return; }
   const genres = getPrefGenres();
   raw.split(',').map(g=>g.trim()).filter(Boolean).forEach(g => {
-    if(!genres.includes(g)) genres.push(g);
+    if(g && !genres.includes(g)) genres.push(g);
   });
-  savePrefGenres(genres);
+  // Save with explicit uid
+  try { localStorage.setItem(PREF_GENRES_KEY+'_'+uid, JSON.stringify(genres)); } catch(e) { console.error('Save error:', e); }
+  const existing = getSavedGenres();
+  const merged = [...genres, ...existing.filter(g => !genres.includes(g))];
+  try { localStorage.setItem(GENRES_CACHE_KEY+'_'+uid, JSON.stringify(merged)); } catch(e) {}
   inp.value = '';
   renderPrefGenres();
+  updateGenreDatalist();
 };
 
 function removePrefGenre(g) {
