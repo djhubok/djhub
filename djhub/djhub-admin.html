@@ -614,20 +614,26 @@ window.confirmAction = async function() {
   
   if(action === 'delete') {
     try {
-      // First mark as deleted so active sessions get kicked out
-      await setDoc(doc(db, 'users', uid), { deleted: true }, { merge: true });
-      // Wait 2 seconds for the interval to pick it up, then delete
-      await new Promise(r => setTimeout(r, 2000));
-      // Delete all events for this user
+      // 1. Mark as deleted in Firestore immediately — kicks active sessions in <30s
+      await setDoc(doc(db, 'users', uid), { deleted: true, suspended: true }, { merge: true });
+
+      // 2. Delete from Firebase Auth via REST API so they can never log in again
+      const adminToken = await auth.currentUser.getIdToken();
+      await fetch('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=AIzaSyB0GtTsBbaRkhubslOzmHd-1VhX8hkL5oI', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ localId: uid, idToken: adminToken })
+      });
+
+      // 3. Delete all Firestore data
       const userEvents = allEvents.filter(e => e.userId === uid);
       for(const ev of userEvents) {
         await deleteDoc(doc(db, 'events', ev.id));
       }
-      // Delete user profile
       await deleteDoc(doc(db, 'users', uid));
-      // Remove from suspended if present
       delete suspendedUsers[uid];
       await setDoc(doc(db, 'admin', 'suspended'), { users: suspendedUsers });
+
       closeModal();
       await loadAll();
       goto('users');
