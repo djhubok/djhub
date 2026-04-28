@@ -617,15 +617,7 @@ window.confirmAction = async function() {
       // 1. Mark as deleted in Firestore immediately — kicks active sessions in <30s
       await setDoc(doc(db, 'users', uid), { deleted: true, suspended: true }, { merge: true });
 
-      // 2. Delete from Firebase Auth via REST API so they can never log in again
-      const adminToken = await auth.currentUser.getIdToken();
-      await fetch('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=AIzaSyB0GtTsBbaRkhubslOzmHd-1VhX8hkL5oI', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ localId: uid, idToken: adminToken })
-      });
-
-      // 3. Add email to blacklist so they can never log in again
+      // 2. Add email to blacklist so they can never log in again
       const deletedUser = allUsers.find(u => u.uid === uid);
       if(deletedUser?.email) {
         const blRef = doc(db, 'admin', 'blacklist');
