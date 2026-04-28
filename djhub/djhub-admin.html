@@ -524,7 +524,7 @@ function renderUsers() {
             ? `<button class="action-btn restore" onclick="showModal('restore','${u.uid}','${u.name}')">Restaurar</button>`
             : `<button class="action-btn danger" onclick="showModal('suspend','${u.uid}','${u.name}')">Suspender</button>`
           }
-          ${u.provider !== 'google' ? `<button class="action-btn danger" onclick="showModal('delete','${u.uid}','${u.name}')" style="border-color:rgba(255,107,107,.3)">Eliminar</button>` : ''}
+          ${(u.provider !== 'google' && !u.email.toLowerCase().includes('@gmail.com')) ? `<button class="action-btn danger" onclick="showModal('delete','${u.uid}','${u.name}')" style="border-color:rgba(255,107,107,.3)">Eliminar</button>` : ''}
         </div>
       </div>`;
     }).join('')}`;
@@ -556,7 +556,7 @@ window.openDetail = function(uid) {
           ? `<button class="action-btn restore" style="padding:8px 18px;font-size:13px" onclick="showModal('restore','${uid}','${u.name}')">Restaurar acceso</button>`
           : `<button class="action-btn danger" style="padding:8px 18px;font-size:13px" onclick="showModal('suspend','${uid}','${u.name}')">Suspender usuario</button>`
         }
-        ${u.provider !== 'google' ? `<button class="action-btn danger" style="padding:8px 18px;font-size:13px;margin-left:8px;border-color:rgba(255,107,107,.3)" onclick="showModal('delete','${uid}','${u.name}')">Eliminar cuenta</button>` : ''}
+        ${(u.provider !== 'google' && !u.email.toLowerCase().includes('@gmail.com')) ? `<button class="action-btn danger" style="padding:8px 18px;font-size:13px;margin-left:8px;border-color:rgba(255,107,107,.3)" onclick="showModal('delete','${uid}','${u.name}')">Eliminar cuenta</button>` : ''}
       </div>
     </div>
     <div class="detail-stats">
