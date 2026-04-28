@@ -1633,45 +1633,54 @@ setupNotifications();
 // ===================== AJUSTES =====================
 function renderAjustes() {
   if(!currentUser) return;
-  // Read from Firestore for latest data
-  getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
+  const uid = currentUser.uid;
+
+  // Show cached data IMMEDIATELY (no waiting for Firestore)
+  const cachedPhoto = localStorage.getItem('djhub_photo_'+uid) || currentUser.photoURL;
+  const cachedName = localStorage.getItem('djhub_name_'+uid) || currentUser.displayName || currentUser.email || '';
+  applyAjustesUI(cachedPhoto, cachedName, null);
+  renderSettingsUI();
+
+  // Then update from Firestore in background
+  getDoc(doc(db, 'users', uid)).then(snap => {
     const data = snap.exists() ? snap.data() : {};
-    // Photo — localStorage first, then Firestore, then Google
-    const photoURL = localStorage.getItem('djhub_photo_'+currentUser.uid) || data.photoURL || currentUser.photoURL;
-    const img = document.getElementById('aj-avatar-img');
-    const letter = document.getElementById('aj-avatar-letter');
-    const wrap = document.getElementById('aj-avatar-wrap');
-    if(photoURL) {
-      if(img) { img.src=photoURL; img.style.display='block'; if(letter) letter.style.display='none'; }
-      // Also cache in localStorage if not already there
-      if(!localStorage.getItem('djhub_photo_'+currentUser.uid) && photoURL) {
-        try { localStorage.setItem('djhub_photo_'+currentUser.uid, photoURL); } catch(e) {}
-      }
-    } else {
-      if(img) img.style.display='none';
-      if(letter) { letter.style.display='flex'; letter.textContent=(currentUser.displayName||currentUser.email||'DJ')[0].toUpperCase(); }
-      if(wrap) wrap.style.background='var(--acc)';
+    const photoURL = localStorage.getItem('djhub_photo_'+uid) || data.photoURL || currentUser.photoURL;
+    const savedName = localStorage.getItem('djhub_name_'+uid) || data.name || currentUser.displayName || currentUser.email || '';
+    // Cache photo from Firestore if not already local
+    if(!localStorage.getItem('djhub_photo_'+uid) && data.photoURL) {
+      try { localStorage.setItem('djhub_photo_'+uid, data.photoURL); } catch(e) {}
     }
-    // Name
-    const savedName = data.name || localStorage.getItem('djhub_name_'+currentUser.uid) || currentUser.displayName || currentUser.email || '';
-    const dispName = document.getElementById('aj-display-name');
-    const emailEl = document.getElementById('aj-display-email');
-    const nameInput = document.getElementById('aj-name-input');
-    if(dispName) dispName.textContent = savedName;
-    const dvEl = document.getElementById('aj-name-display-val');
-    if(dvEl) dvEl.textContent = savedName;
-    if(emailEl) emailEl.textContent = currentUser.email||'';
-    if(nameInput) nameInput.value = savedName;
-    // Password section
+    if(!localStorage.getItem('djhub_name_'+uid) && data.name) {
+      localStorage.setItem('djhub_name_'+uid, data.name);
+    }
+    applyAjustesUI(photoURL, savedName, data.provider);
+  }).catch(()=>{});
+}
+
+function applyAjustesUI(photoURL, name, provider) {
+  const img = document.getElementById('aj-avatar-img');
+  const letter = document.getElementById('aj-avatar-letter');
+  const wrap = document.getElementById('aj-avatar-wrap');
+  if(photoURL) {
+    if(img) { img.src=photoURL; img.style.display='block'; if(letter) letter.style.display='none'; }
+  } else {
+    if(img) img.style.display='none';
+    if(letter) { letter.style.display='flex'; letter.textContent=(currentUser?.displayName||currentUser?.email||'DJ')[0].toUpperCase(); }
+    if(wrap) wrap.style.background='var(--acc)';
+  }
+  const dispName = document.getElementById('aj-display-name');
+  const dvEl = document.getElementById('aj-name-display-val');
+  const emailEl = document.getElementById('aj-display-email');
+  const nameInput = document.getElementById('aj-name-input');
+  if(dispName) dispName.textContent = name;
+  if(dvEl) dvEl.textContent = name;
+  if(emailEl) emailEl.textContent = currentUser?.email||'';
+  if(nameInput && !nameInput.dataset.editing) nameInput.value = name;
+  if(provider !== null) {
     const passSection = document.getElementById('aj-pass-section');
-    if(passSection) passSection.style.display = data.provider === 'email' ? '' : 'none';
-    // Update sidebar too
-    updateSidebarAvatar(photoURL || null, savedName);
-    // Render settings UI
-    renderSettingsUI();
-  }).catch(()=>{
-    renderSettingsUI();
-  });
+    if(passSection) passSection.style.display = provider === 'email' ? '' : 'none';
+  }
+  updateSidebarAvatar(photoURL || null, name);
 }
 
 window.handlePhotoUpload = function(input) {
@@ -1849,6 +1858,7 @@ function renderSettingsUI() {
   renderCurrencyUI(getCurrentCurrency());
   renderNotifUI(getNotifEnabled());
   renderPrefGenres();
+  updateGenreDatalist();
 }
 
 window.toggleNameEdit = function(show) {
