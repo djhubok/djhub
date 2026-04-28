@@ -864,9 +864,14 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         <!-- Nombre -->
         <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Nombre</div>
-          <div style="display:flex;gap:10px">
+          <div id="aj-name-display-row" style="display:flex;align-items:center;justify-content:space-between">
+            <span id="aj-name-display-val" style="font-size:15px;font-weight:500;color:var(--txt)"></span>
+            <button onclick="toggleNameEdit(true)" style="background:var(--s2);border:1px solid var(--b1);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">Cambiar</button>
+          </div>
+          <div id="aj-name-edit-row" style="display:none;gap:10px">
             <input id="aj-name-input" class="fi" placeholder="Tu nombre o alias de DJ" style="flex:1">
             <button onclick="saveName()" style="background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:0 18px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;white-space:nowrap">Guardar</button>
+            <button onclick="toggleNameEdit(false)" style="background:none;border:1px solid var(--b1);color:var(--muted);border-radius:10px;padding:0 12px;font-size:13px;cursor:pointer">✕</button>
           </div>
           <div id="aj-name-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
         </div>
@@ -1580,52 +1585,72 @@ setupNotifications();
 // ===================== AJUSTES =====================
 function renderAjustes() {
   if(!currentUser) return;
-  // Avatar
-  const photoURL = localStorage.getItem('djhub_photo_'+currentUser.uid) || currentUser.photoURL;
-  const img = document.getElementById('aj-avatar-img');
-  const letter = document.getElementById('aj-avatar-letter');
-  const wrap = document.getElementById('aj-avatar-wrap');
-  if(photoURL) {
-    img.src = photoURL; img.style.display='block'; letter.style.display='none';
-  } else {
-    img.style.display='none'; letter.style.display='flex';
-    letter.textContent = (currentUser.displayName||currentUser.email||'DJ')[0].toUpperCase();
-    wrap.style.background = 'var(--acc)';
-  }
-  // Name & email
-  const savedName = localStorage.getItem('djhub_name_'+currentUser.uid) || currentUser.displayName || currentUser.email || '';
-  document.getElementById('aj-display-name').textContent = savedName;
-  document.getElementById('aj-display-email').textContent = currentUser.email||'';
-  document.getElementById('aj-name-input').value = savedName;
-  // Password section — only for email users
+  // Read from Firestore for latest data
   getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
-    const provider = snap.exists() ? snap.data().provider : 'google';
-    document.getElementById('aj-pass-section').style.display = provider === 'email' ? '' : 'none';
+    const data = snap.exists() ? snap.data() : {};
+    // Photo — localStorage first, then Firestore, then Google
+    const photoURL = localStorage.getItem('djhub_photo_'+currentUser.uid) || data.photoURL || currentUser.photoURL;
+    const img = document.getElementById('aj-avatar-img');
+    const letter = document.getElementById('aj-avatar-letter');
+    const wrap = document.getElementById('aj-avatar-wrap');
+    if(photoURL) {
+      if(img) { img.src=photoURL; img.style.display='block'; if(letter) letter.style.display='none'; }
+      // Also cache in localStorage if not already there
+      if(!localStorage.getItem('djhub_photo_'+currentUser.uid) && photoURL) {
+        try { localStorage.setItem('djhub_photo_'+currentUser.uid, photoURL); } catch(e) {}
+      }
+    } else {
+      if(img) img.style.display='none';
+      if(letter) { letter.style.display='flex'; letter.textContent=(currentUser.displayName||currentUser.email||'DJ')[0].toUpperCase(); }
+      if(wrap) wrap.style.background='var(--acc)';
+    }
+    // Name
+    const savedName = data.name || localStorage.getItem('djhub_name_'+currentUser.uid) || currentUser.displayName || currentUser.email || '';
+    const dispName = document.getElementById('aj-display-name');
+    const emailEl = document.getElementById('aj-display-email');
+    const nameInput = document.getElementById('aj-name-input');
+    if(dispName) dispName.textContent = savedName;
+    const dvEl = document.getElementById('aj-name-display-val');
+    if(dvEl) dvEl.textContent = savedName;
+    if(emailEl) emailEl.textContent = currentUser.email||'';
+    if(nameInput) nameInput.value = savedName;
+    // Password section
+    const passSection = document.getElementById('aj-pass-section');
+    if(passSection) passSection.style.display = data.provider === 'email' ? '' : 'none';
+    // Update sidebar too
+    updateSidebarAvatar(photoURL || null, savedName);
   }).catch(()=>{});
 }
 
 window.handlePhotoUpload = function(input) {
   const file = input.files[0];
   if(!file) return;
-  if(file.size > 3*1024*1024) { alert('La imagen debe pesar menos de 3MB.'); return; }
-  // Show immediately using object URL (no FileReader needed)
+  if(file.size > 5*1024*1024) { alert('La imagen debe pesar menos de 5MB.'); return; }
+  // Show immediately
   const objectUrl = URL.createObjectURL(file);
   const img = document.getElementById('aj-avatar-img');
   const letter = document.getElementById('aj-avatar-letter');
   if(img) { img.src=objectUrl; img.style.display='block'; if(letter) letter.style.display='none'; }
   updateSidebarAvatar(objectUrl, null);
-  // Also read as base64 for persistence
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataUrl = e.target.result;
-    try { localStorage.setItem('djhub_photo_'+(window._auth||auth).currentUser.uid, dataUrl); } catch(err) {}
-    // Save to Firestore (truncate if too large)
+  // Compress and save
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const image = new Image();
+  image.onload = () => {
+    // Resize to max 200x200
+    const size = 200;
+    canvas.width = size; canvas.height = size;
+    const ratio = Math.min(size/image.width, size/image.height);
+    const w = image.width*ratio, h = image.height*ratio;
+    ctx.drawImage(image, (size-w)/2, (size-h)/2, w, h);
+    const compressed = canvas.toDataURL('image/jpeg', 0.7);
     const _u = (window._auth||auth).currentUser;
-    if(_u && dataUrl.length < 500000) {
-      (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
-    }
+    if(!_u) return;
+    try { localStorage.setItem('djhub_photo_'+_u.uid, compressed); } catch(e) {}
+    // Save to Firestore — compressed is small enough
+    (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: compressed},{merge:true}).catch(e=>console.error('Photo save:',e));
   };
-  reader.readAsDataURL(file);
+  image.src = objectUrl;
 };
 
 function updateSidebarAvatar(photoURL, name) {
@@ -1657,6 +1682,12 @@ function updateSidebarAvatar(photoURL, name) {
   }
 }
 
+window.toggleNameEdit = function(show) {
+  document.getElementById('aj-name-display-row').style.display = show ? 'none' : 'flex';
+  document.getElementById('aj-name-edit-row').style.display = show ? 'flex' : 'none';
+  if(show) document.getElementById('aj-name-input').focus();
+};
+
 window.saveName = async function() {
   const name = document.getElementById('aj-name-input').value.trim();
   const msg = document.getElementById('aj-name-msg');
@@ -1666,6 +1697,9 @@ window.saveName = async function() {
     localStorage.setItem('djhub_name_'+uid, name);
     await (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',uid),{name},{merge:true});
     document.getElementById('aj-display-name').textContent = name;
+    const dv = document.getElementById('aj-name-display-val');
+    if(dv) dv.textContent = name;
+    toggleNameEdit(false);
     updateSidebarAvatar(null, name);
     msg.textContent='✓ Nombre guardado.'; msg.style.color='var(--paid)';
     setTimeout(()=>msg.textContent='',2500);
