@@ -1654,11 +1654,9 @@ function renderAjustes() {
   const uid = currentUser?.uid || localStorage.getItem('djhub_last_uid');
   if(!uid) return;
 
-  // Read from sidebar first (already loaded), then localStorage
-  const sidebarName = document.getElementById('user-name')?.textContent || '';
-  const sidebarImg = document.getElementById('user-avatar')?.querySelector('img')?.src || null;
-  const cachedPhoto = sidebarImg || localStorage.getItem('djhub_photo_'+uid) || currentUser?.photoURL || null;
-  const cachedName = sidebarName || localStorage.getItem('djhub_name_'+uid) || currentUser?.displayName || currentUser?.email || '';
+  // Always read from localStorage — most reliable source
+  const cachedPhoto = localStorage.getItem('djhub_photo_'+uid) || currentUser?.photoURL || null;
+  const cachedName = localStorage.getItem('djhub_name_'+uid) || currentUser?.displayName || currentUser?.email || '';
   applyAjustesUI(cachedPhoto, cachedName, null);
 
   // Then update from Firestore in background
@@ -1718,7 +1716,6 @@ window.handlePhotoUpload = function(input) {
   const ctx = canvas.getContext('2d');
   const image = new Image();
   image.onload = () => {
-    // Resize to max 200x200
     const size = 200;
     canvas.width = size; canvas.height = size;
     const ratio = Math.min(size/image.width, size/image.height);
@@ -1728,7 +1725,11 @@ window.handlePhotoUpload = function(input) {
     const _u = (window._auth||auth).currentUser;
     if(!_u) return;
     try { localStorage.setItem('djhub_photo_'+_u.uid, compressed); } catch(e) {}
-    // Save to Firestore — compressed is small enough
+    // Update sidebar and ajustes with compressed (persistent) version
+    updateSidebarAvatar(compressed, null);
+    const img2 = document.getElementById('aj-avatar-img');
+    if(img2) { img2.src=compressed; img2.style.display='block'; }
+    // Save to Firestore
     (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: compressed},{merge:true}).catch(e=>console.error('Photo save:',e));
   };
   image.src = objectUrl;
