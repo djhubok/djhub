@@ -1369,6 +1369,17 @@ if('Notification' in window&&Notification.permission==='default') Notification.r
 // load() is triggered by Firebase onAuthStateChanged
 setupNotifications();
 
+// Check suspension every 60 seconds while app is open
+setInterval(async () => {
+  if(!currentUser) return;
+  try {
+    const suspended = await checkIfSuspended(currentUser.uid);
+    if(suspended) {
+      await signOut(auth);
+    }
+  } catch(e) {}
+}, 60000);
+
 // TOGGLE PASSWORD VISIBILITY
 window.togglePass = function(inputId, eyeId) {
   const input = document.getElementById(inputId);
