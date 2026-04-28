@@ -895,6 +895,40 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
           <div id="aj-pass-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
         </div>
 
+        <!-- Moneda -->
+        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Moneda</div>
+          <div style="display:flex;gap:8px">
+            <div class="currency-opt" id="cur-ARS" onclick="setCurrency('ARS')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇦🇷 ARS</div>
+            <div class="currency-opt" id="cur-USD" onclick="setCurrency('USD')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇺🇸 USD</div>
+            <div class="currency-opt" id="cur-EUR" onclick="setCurrency('EUR')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇪🇺 EUR</div>
+          </div>
+        </div>
+
+        <!-- Notificaciones -->
+        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Notificaciones</div>
+              <div style="font-size:12px;color:var(--dim)">Recordatorio 1 hora antes de cada fecha</div>
+            </div>
+            <div id="notif-toggle" onclick="toggleNotifications()" style="width:44px;height:24px;border-radius:12px;background:var(--s3);border:1px solid var(--b1);cursor:pointer;position:relative;transition:background .2s">
+              <div id="notif-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:all .2s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Géneros principales -->
+        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Géneros principales</div>
+          <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Aparecen primero en sugerencias al crear una fecha</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input id="pref-genre-input" class="fi" placeholder="Ej: reggaeton, cumbia…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addPrefGenre()}">
+            <button onclick="addPrefGenre()" style="background:var(--acc);color:#06060a;border:none;border-radius:9px;padding:0 14px;font-family:'Bebas Neue',sans-serif;font-size:14px;cursor:pointer;white-space:nowrap">+ Agregar</button>
+          </div>
+          <div id="pref-genres-list" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+
         <!-- Cerrar sesión -->
         <button onclick="logout()" style="width:100%;background:none;border:1px solid var(--b1);border-radius:var(--radius);padding:13px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--danger)';this.style.borderColor='rgba(255,107,107,.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--b1)'">Cerrar sesión</button>
 
@@ -1022,6 +1056,20 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 <script>
 const SK = 'djhub_web_v1';
 let events = [], editId = null, sT = null, sPay = 'pend', sR = null, sRv = null;
+
+// Settings constants — defined early so all functions can access them
+const CURRENCY_KEY = 'djhub_currency';
+const CURRENCY_SYMBOLS = { ARS: '$', USD: 'U$D', EUR: '€' };
+const NOTIF_KEY = 'djhub_notifications';
+const PREF_GENRES_KEY = 'djhub_pref_genres';
+const GENRES_CACHE_KEY = 'djhub_saved_genres';
+function getCurrentCurrency() { return localStorage.getItem(CURRENCY_KEY) || 'ARS'; }
+function getNotifEnabled() { const v=localStorage.getItem(NOTIF_KEY); return v===null?true:v==='true'; }
+function getPrefGenres() { try{return JSON.parse(localStorage.getItem(PREF_GENRES_KEY))||[];}catch(e){return[];} }
+function getSavedGenres() { try{return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY))||[];}catch(e){return[];} }
+function fmtM(n) { const sym=CURRENCY_SYMBOLS[getCurrentCurrency()]||'$'; return sym+Math.round(n).toLocaleString('es-AR'); }
+
+// Settings constants — defined early so all functions can access them
 // genreRatings: { [genreName]: 'funciono' | 'no' | 'parcial' }
 let genreRatings = {};
 
@@ -1047,7 +1095,6 @@ function fmtDate(d) {
 function typeLabel(t) { return {b:'Boliche',a:'Bar',p:'Privado',f:'Festival'}[t]||t; }
 function typeCls(t) { return {b:'bt',a:'bb',p:'bp',f:'bf'}[t]||''; }
 function ratEmoji(r) { return {malo:'😬',regular:'😐',bueno:'🔥',excelente:'⚡'}[r]||''; }
-function fmtM(n) { return '$'+ Math.round(n).toLocaleString('es-AR'); }
 function calcH(s,e) {
   if(!s||!e) return 0;
   const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
@@ -1339,11 +1386,7 @@ function renderAnalytics() {
 }
 
 // ===================== SAVED GENRES =====================
-const GENRES_CACHE_KEY = 'djhub_saved_genres';
 
-function getSavedGenres() {
-  try { return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY)) || []; } catch(e) { return []; }
-}
 
 function saveGenreToHistory(genre) {
   const saved = getSavedGenres();
@@ -1556,6 +1599,7 @@ document.getElementById('overlay').addEventListener('click',function(e){if(e.tar
 
 // NOTIFICATIONS
 function setupNotifications() {
+  if(!getNotifEnabled()) return; // respect user preference
   const upcoming=events.filter(e=>!isPast(e.date));
   upcoming.forEach(ev=>{
     const dt=new Date(ev.date+'T'+(ev.startTime||'20:00')), now=new Date(), diff=dt-now;
@@ -1619,7 +1663,11 @@ function renderAjustes() {
     if(passSection) passSection.style.display = data.provider === 'email' ? '' : 'none';
     // Update sidebar too
     updateSidebarAvatar(photoURL || null, savedName);
-  }).catch(()=>{});
+    // Render settings UI
+    renderSettingsUI();
+  }).catch(()=>{
+    renderSettingsUI();
+  });
 }
 
 window.handlePhotoUpload = function(input) {
@@ -1680,6 +1728,114 @@ function updateSidebarAvatar(photoURL, name) {
     const dispName = document.getElementById('aj-display-name');
     if(dispName) dispName.textContent = name;
   }
+}
+
+// ===================== SETTINGS: CURRENCY =====================
+
+window.setCurrency = function(cur) {
+  localStorage.setItem(CURRENCY_KEY, cur);
+  renderCurrencyUI(cur);
+  // Update all money displays
+  render();
+  if(document.getElementById('page-ganancias').classList.contains('active')) renderAnalytics();
+  if(document.getElementById('page-lugares').classList.contains('active')) renderVenues();
+};
+
+function renderCurrencyUI(cur) {
+  ['ARS','USD','EUR'].forEach(c => {
+    const el = document.getElementById('cur-'+c);
+    if(!el) return;
+    if(c === cur) {
+      el.style.borderColor = 'var(--acc)';
+      el.style.background = 'var(--acc2)';
+      el.style.color = 'var(--acc)';
+    } else {
+      el.style.borderColor = 'var(--b1)';
+      el.style.background = 'var(--s2)';
+      el.style.color = 'var(--muted)';
+    }
+  });
+}
+
+// ===================== SETTINGS: NOTIFICATIONS =====================
+
+window.toggleNotifications = function() {
+  const enabled = !getNotifEnabled();
+  localStorage.setItem(NOTIF_KEY, String(enabled));
+  renderNotifUI(enabled);
+  if(enabled && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+};
+
+function renderNotifUI(enabled) {
+  const toggle = document.getElementById('notif-toggle');
+  const knob = document.getElementById('notif-knob');
+  if(!toggle || !knob) return;
+  toggle.style.background = enabled ? 'var(--acc)' : 'var(--s3)';
+  knob.style.left = enabled ? '23px' : '3px';
+  knob.style.background = enabled ? '#06060a' : 'var(--muted)';
+}
+
+// ===================== SETTINGS: PREFERRED GENRES =====================
+
+function savePrefGenres(genres) {
+  localStorage.setItem(PREF_GENRES_KEY, JSON.stringify(genres));
+  // Merge with saved genres history so they appear first in datalist
+  const existing = getSavedGenres();
+  const merged = [...genres, ...existing.filter(g => !genres.includes(g))];
+  localStorage.setItem(GENRES_CACHE_KEY, JSON.stringify(merged));
+  updateGenreDatalist();
+}
+
+window.addPrefGenre = function() {
+  const inp = document.getElementById('pref-genre-input');
+  const raw = inp.value.trim().toLowerCase();
+  if(!raw) return;
+  const genres = getPrefGenres();
+  raw.split(',').map(g=>g.trim()).filter(Boolean).forEach(g => {
+    if(!genres.includes(g)) genres.push(g);
+  });
+  savePrefGenres(genres);
+  inp.value = '';
+  renderPrefGenres();
+};
+
+function removePrefGenre(g) {
+  const genres = getPrefGenres().filter(x => x !== g);
+  savePrefGenres(genres);
+  renderPrefGenres();
+}
+
+function renderPrefGenres() {
+  const container = document.getElementById('pref-genres-list');
+  if(!container) return;
+  const genres = getPrefGenres();
+  if(!genres.length) {
+    container.innerHTML = '<span style="font-size:12px;color:var(--dim)">Sin géneros guardados todavía.</span>';
+    return;
+  }
+  container.innerHTML = genres.map((g, idx) =>
+    '<div style="display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:20px;padding:5px 12px">'
+    + '<span style="font-size:12px;font-weight:500">' + g + '</span>'
+    + '<span class="pref-del" data-idx="' + idx + '" style="color:var(--dim);cursor:pointer;font-size:14px;line-height:1">×</span>'
+    + '</div>'
+  ).join('');
+  container.querySelectorAll('.pref-del').forEach(el => {
+    el.addEventListener('mouseenter', () => el.style.color = 'var(--danger)');
+    el.addEventListener('mouseleave', () => el.style.color = 'var(--dim)');
+    el.addEventListener('click', () => {
+      const g = getPrefGenres()[+el.dataset.idx];
+      removePrefGenre(g);
+    });
+  });
+}
+
+// ===================== RENDER ALL SETTINGS =====================
+function renderSettingsUI() {
+  renderCurrencyUI(getCurrentCurrency());
+  renderNotifUI(getNotifEnabled());
+  renderPrefGenres();
 }
 
 window.toggleNameEdit = function(show) {
