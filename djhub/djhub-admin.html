@@ -635,6 +635,8 @@ window.confirmAction = async function() {
   else delete suspendedUsers[uid];
   try {
     await setDoc(doc(db, 'admin', 'suspended'), { users: suspendedUsers });
+    // Also write suspended flag to user's own doc so the app can detect it in real time
+    await setDoc(doc(db, 'users', uid), { suspended: action === 'suspend' }, { merge: true });
   } catch(e) { console.error(e); }
   closeModal();
   renderUsers();
