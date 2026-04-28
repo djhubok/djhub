@@ -7,7 +7,7 @@
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ===================== FIREBASE CONFIG =====================
@@ -55,6 +55,10 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
+    // Show change password only for email users
+    const isEmailUser = user.providerData?.[0]?.providerId !== 'google.com';
+    const cpBtn = document.getElementById('change-pass-btn');
+    if(cpBtn) cpBtn.style.display = isEmailUser ? '' : 'none';
     await saveUserProfile(user);
     // Check if suspended
     const suspended = await checkIfSuspended(user.uid);
@@ -119,11 +123,11 @@ window.loginEmail = async function() {
   if (!email || !pass) { setAuthError('Completá email y contraseña.'); return; }
   try { await signInWithEmailAndPassword(auth, email, pass); }
   catch(e) {
-    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-      // try register
-      try { await createUserWithEmailAndPassword(auth, email, pass); }
-      catch(e2) { setAuthError(e2.message); }
-    } else { setAuthError(e.message); }
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
+      setAuthError('Email o contraseña incorrectos. Si no tenés cuenta, contactá al administrador.');
+    } else {
+      setAuthError('Error al ingresar. Intentá de nuevo.');
+    }
   }
 };
 
@@ -148,11 +152,13 @@ async function checkIfSuspended(uid) {
 // ===================== SAVE USER PROFILE =====================
 async function saveUserProfile(user) {
   try {
+    const provider = user.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email';
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email: user.email || '',
       name: user.displayName || user.email || 'DJ',
       photoURL: user.photoURL || '',
+      provider: provider,
       lastLogin: new Date().toISOString()
     }, { merge: true });
   } catch(e) { console.error('Profile save error:', e); }
@@ -608,9 +614,36 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
     </div>
     <input id="auth-email" type="email" placeholder="tu@email.com" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:10px">
     <input id="auth-pass" type="password" placeholder="Contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:14px" onkeydown="if(event.key==='Enter')loginEmail()">
-    <button onclick="loginEmail()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:12px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;cursor:pointer">Entrar / Registrarse</button>
+    <button onclick="loginEmail()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:12px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;cursor:pointer">Entrar</button>
     <div id="auth-error" style="margin-top:12px;font-size:12px;color:var(--danger);text-align:center;min-height:18px"></div>
-    <div style="margin-top:20px;font-size:11px;color:var(--dim);text-align:center">Si es tu primera vez, se crea la cuenta automáticamente.</div>
+    <div style="margin-top:20px;font-size:11px;color:var(--dim);text-align:center">Para acceder necesitás una cuenta autorizada por el administrador.</div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="cp-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:380px;padding:0;animation:su .2s ease">
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.04em">Cambiar contraseña</span>
+      <button onclick="closeChangePass()" style="background:var(--s2);border:1px solid var(--b1);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:20px 22px 24px">
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Contraseña actual</label>
+        <input id="cp-current" type="password" placeholder="Tu contraseña actual" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Nueva contraseña</label>
+        <input id="cp-new" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Repetir nueva contraseña</label>
+        <input id="cp-confirm" type="password" placeholder="Repetí la nueva contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+      </div>
+      <div id="cp-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;min-height:18px"></div>
+      <div id="cp-success" style="font-size:12px;color:var(--paid);margin-bottom:12px;min-height:18px"></div>
+      <button onclick="doChangePass()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;cursor:pointer">Guardar nueva contraseña</button>
+    </div>
   </div>
 </div>
 
@@ -1276,6 +1309,48 @@ function saveEv() {
   const evToSave = editId ? events.find(e=>e.id===editId) : events[events.length-1];
   if(evToSave && window._firebaseSave) window._firebaseSave(evToSave);
 }
+
+// CHANGE PASSWORD
+window.openChangePass = function() {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  document.getElementById('cp-error').textContent = '';
+  document.getElementById('cp-success').textContent = '';
+  document.getElementById('cp-overlay').style.display = 'flex';
+};
+
+window.closeChangePass = function() {
+  document.getElementById('cp-overlay').style.display = 'none';
+};
+
+window.doChangePass = async function() {
+  const current = document.getElementById('cp-current').value;
+  const newPass = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-error');
+  const okEl  = document.getElementById('cp-success');
+  errEl.textContent = ''; okEl.textContent = '';
+
+  if(!current || !newPass || !confirm) { errEl.textContent = 'Completá todos los campos.'; return; }
+  if(newPass.length < 6) { errEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres.'; return; }
+  if(newPass !== confirm) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+
+  try {
+    const user = auth.currentUser;
+    const credential = EmailAuthProvider.credential(user.email, current);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPass);
+    okEl.textContent = '✓ Contraseña actualizada correctamente.';
+    setTimeout(() => closeChangePass(), 2000);
+  } catch(e) {
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      errEl.textContent = 'La contraseña actual es incorrecta.';
+    } else {
+      errEl.textContent = 'Error: ' + e.message;
+    }
+  }
+};
 
 // CLOSE ON BACKDROP
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
