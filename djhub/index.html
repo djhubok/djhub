@@ -65,11 +65,11 @@ onAuthStateChanged(auth, async (user) => {
     localStorage.setItem('djhub_last_uid', user.uid);
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
-    const savedName = localStorage.getItem('djhub_name_'+user.uid) || user.displayName || user.email || '';
-    const savedPhoto = localStorage.getItem('djhub_photo_'+user.uid) || user.photoURL;
+    const savedName = user.displayName || user.email || '';
+    const photoURL = user.photoURL || null;
     document.getElementById('user-name').textContent = savedName;
-    if(savedPhoto) {
-      document.getElementById('user-avatar').innerHTML = '<img src="'+savedPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    if(photoURL) {
+      document.getElementById('user-avatar').innerHTML = '<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
       document.getElementById('user-avatar').textContent = (savedName||'DJ')[0].toUpperCase();
     }
@@ -792,10 +792,7 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="22 20 2 20"/></svg>
       Ganancias
     </button>
-    <button class="nav-btn" onclick="goto('ajustes')" id="nav-ajustes">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Ajustes
-    </button>
+
   </nav>
   <div class="sidebar-bottom">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--s2);border-radius:10px;border:1px solid var(--b1)">
@@ -844,102 +841,6 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         Volver a lugares
       </button>
       <div id="detail-wrap"></div>
-    </div>
-
-    <!-- PAGE: AJUSTES -->
-    <div class="page" id="page-ajustes">
-      <div class="scroll-inner" style="max-width:560px;margin:0 auto">
-
-        <!-- Profile card -->
-        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:28px 24px;margin-bottom:20px;text-align:center">
-          <div style="position:relative;display:inline-block;margin-bottom:16px">
-            <div id="aj-avatar-wrap" style="width:80px;height:80px;border-radius:50%;background:var(--acc);color:#06060a;font-family:'Bebas Neue',sans-serif;font-size:36px;display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden;cursor:pointer;border:3px solid var(--b2)" onclick="document.getElementById('aj-photo-input').click()" title="Cambiar foto">
-              <img id="aj-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover">
-              <span id="aj-avatar-letter">N</span>
-            </div>
-            <div onclick="document.getElementById('aj-photo-input').click()" style="position:absolute;bottom:0;right:0;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#06060a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">✎</div>
-            <input type="file" id="aj-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
-          </div>
-          <div id="aj-display-name" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;margin-bottom:4px"></div>
-          <div id="aj-display-email" style="font-size:13px;color:var(--muted)"></div>
-        </div>
-
-        <!-- Nombre -->
-        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Nombre</div>
-          <div id="aj-name-display-row" style="display:flex;align-items:center;justify-content:space-between">
-            <span id="aj-name-display-val" style="font-size:15px;font-weight:500;color:var(--txt)"></span>
-            <button onclick="toggleNameEdit(true)" style="background:var(--s2);border:1px solid var(--b1);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">Cambiar</button>
-          </div>
-          <div id="aj-name-edit-row" style="display:none;gap:10px">
-            <input id="aj-name-input" class="fi" placeholder="Tu nombre o alias de DJ" style="flex:1">
-            <button onclick="saveName()" style="background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:0 18px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;white-space:nowrap">Guardar</button>
-            <button onclick="toggleNameEdit(false)" style="background:none;border:1px solid var(--b1);color:var(--muted);border-radius:10px;padding:0 12px;font-size:13px;cursor:pointer">✕</button>
-          </div>
-          <div id="aj-name-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
-        </div>
-
-        <!-- Contraseña — solo email users -->
-        <div id="aj-pass-section" style="display:none;background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Cambiar contraseña</div>
-          <div style="margin-bottom:10px;position:relative">
-            <input id="aj-cur-pass" type="password" class="fi" placeholder="Contraseña actual" style="padding-right:40px">
-            <button type="button" onclick="togglePass('aj-cur-pass','eye-aj1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj1" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          </div>
-          <div style="margin-bottom:10px;position:relative">
-            <input id="aj-new-pass" type="password" class="fi" placeholder="Nueva contraseña (mín. 6 caracteres)" style="padding-right:40px">
-            <button type="button" onclick="togglePass('aj-new-pass','eye-aj2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          </div>
-          <div style="margin-bottom:12px;position:relative">
-            <input id="aj-con-pass" type="password" class="fi" placeholder="Repetir nueva contraseña" style="padding-right:40px">
-            <button type="button" onclick="togglePass('aj-con-pass','eye-aj3')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj3" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          </div>
-          <button onclick="savePassword()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;cursor:pointer">Cambiar contraseña</button>
-          <div id="aj-pass-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
-        </div>
-
-        <!-- Moneda -->
-        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Moneda</div>
-          <div style="display:flex;gap:8px">
-            <div class="currency-opt" id="cur-ARS" onclick="setCurrency('ARS')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇦🇷 ARS</div>
-            <div class="currency-opt" id="cur-USD" onclick="setCurrency('USD')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇺🇸 USD</div>
-            <div class="currency-opt" id="cur-EUR" onclick="setCurrency('EUR')" style="flex:1;text-align:center;padding:10px;border-radius:9px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">🇪🇺 EUR</div>
-          </div>
-        </div>
-
-        <!-- Notificaciones -->
-        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Notificaciones</div>
-              <div style="font-size:12px;color:var(--dim)">Recordatorio 1 hora antes de cada fecha</div>
-            </div>
-            <div id="notif-toggle" onclick="toggleNotifications()" style="width:44px;height:24px;border-radius:12px;background:var(--s3);border:1px solid var(--b1);cursor:pointer;position:relative;transition:background .2s">
-              <div id="notif-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:all .2s"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Géneros principales -->
-        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Géneros principales</div>
-          <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Aparecen primero en sugerencias al crear una fecha</div>
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <input id="pref-genre-input" class="fi" placeholder="Ej: reggaeton, cumbia…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addPrefGenre()}">
-            <button onclick="addPrefGenre()" style="background:var(--acc);color:#06060a;border:none;border-radius:9px;padding:0 14px;font-family:'Bebas Neue',sans-serif;font-size:14px;cursor:pointer;white-space:nowrap">+ Agregar</button>
-          </div>
-          <div id="pref-genres-list" style="display:flex;flex-wrap:wrap;gap:7px"></div>
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:12px;color:var(--dim)">Historial de sugerencias</span>
-            <button onclick="clearGenreHistory()" style="background:none;border:1px solid var(--b1);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--danger)';this.style.borderColor='rgba(255,107,107,.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--b1)'">Limpiar historial</button>
-          </div>
-        </div>
-
-        <!-- Cerrar sesión -->
-        <button onclick="logout()" style="width:100%;background:none;border:1px solid var(--b1);border-radius:var(--radius);padding:13px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--danger)';this.style.borderColor='rgba(255,107,107,.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--b1)'">Cerrar sesión</button>
-
-      </div>
     </div>
 
     <!-- PAGE: GANANCIAS -->
@@ -1204,21 +1105,14 @@ function globalStats() {
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const navMap = {detail:'lugares',ganancias:'ganancias',ajustes:'ajustes',agenda:'agenda',lugares:'lugares'};
+  const navMap = {detail:'lugares',ganancias:'ganancias',agenda:'agenda',lugares:'lugares'};
   const nb = document.getElementById('nav-'+(navMap[p]||p));
   if(nb) nb.classList.add('active');
-  const heads = { agenda:'Agenda', lugares:'Lugares', ganancias:'Ganancias', detail:'Detalle', ajustes:'Ajustes' };
+  const heads = { agenda:'Agenda', lugares:'Lugares', ganancias:'Ganancias', detail:'Detalle' };
   document.getElementById('page-heading').innerHTML = heads[p]||p;
   document.getElementById('topbar-actions').style.display = p==='agenda' ? '' : 'none';
   if(p==='lugares') renderVenues();
   if(p==='ganancias') renderAnalytics();
-  if(p==='ajustes') {
-    renderCurrencyUI(getCurrentCurrency());
-    renderNotifUI(getNotifEnabled());
-    renderPrefGenres();
-    renderAjustes();
-    setTimeout(renderAjustes, 100);
-  }
 }
 
 function gotoDetail(name) {
