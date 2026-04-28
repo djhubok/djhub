@@ -355,6 +355,7 @@ function setErr(msg) { document.getElementById('a-err').textContent = msg; }
 // ===================== LOAD DATA =====================
 async function loadAll() {
   document.getElementById('last-refresh').textContent = 'Cargando...';
+  
   // Load all events
   const evSnap = await getDocs(collection(db, 'events'));
   allEvents = evSnap.docs.map(d => ({ ...d.data(), id: d.id }));
@@ -365,13 +366,28 @@ async function loadAll() {
     suspendedUsers = suspDoc.exists() ? (suspDoc.data().users || {}) : {};
   } catch(e) { suspendedUsers = {}; }
 
-  // Build user list from events (group by userId)
+  // Load users from users collection
+  const usersSnap = await getDocs(collection(db, 'users'));
+  const usersFromDB = {};
+  usersSnap.docs.forEach(d => { usersFromDB[d.id] = d.data(); });
+
+  // Build user list — combine users collection + events
   const userMap = {};
+  
+  // First add all registered users
+  Object.values(usersFromDB).forEach(u => {
+    userMap[u.uid] = { uid: u.uid, email: u.email||'', name: u.name||u.email||'DJ', events: [], totalEarned: 0, lastLogin: u.lastLogin||'' };
+  });
+
+  // Then add events to each user
   allEvents.forEach(ev => {
     if(!ev.userId) return;
     if(!userMap[ev.userId]) userMap[ev.userId] = { uid: ev.userId, email: ev.userEmail||'', name: ev.userName||ev.userEmail||'DJ', events: [], totalEarned: 0 };
     userMap[ev.userId].events.push(ev);
     userMap[ev.userId].totalEarned += parseFloat(ev.pay)||0;
+    // update name/email from event if missing
+    if(!userMap[ev.userId].name && ev.userName) userMap[ev.userId].name = ev.userName;
+    if(!userMap[ev.userId].email && ev.userEmail) userMap[ev.userId].email = ev.userEmail;
   });
   allUsers = Object.values(userMap).sort((a,b) => b.events.length - a.events.length);
   document.getElementById('users-count').textContent = allUsers.length;
