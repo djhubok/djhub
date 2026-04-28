@@ -24,6 +24,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
+// Expose to window so functions outside module can access
+window._auth = auth;
+window._db = db;
+window._EmailAuthProvider = EmailAuthProvider;
+window._reauthenticateWithCredential = reauthenticateWithCredential;
+window._updatePassword = updatePassword;
 
 // ===================== LOAD THEME FROM ADMIN =====================
 async function loadAndApplyTheme() {
@@ -1403,10 +1409,13 @@ window.doChangePass = async function() {
   if(newPass !== confirm) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
   try {
-    const user = auth.currentUser;
-    const credential = EmailAuthProvider.credential(user.email, current);
-    await reauthenticateWithCredential(user, credential);
-    await updatePassword(user, newPass);
+    const user = (window._auth || auth).currentUser;
+    const EAP = window._EmailAuthProvider || EmailAuthProvider;
+    const reauth = window._reauthenticateWithCredential || reauthenticateWithCredential;
+    const updPass = window._updatePassword || updatePassword;
+    const credential = EAP.credential(user.email, current);
+    await reauth(user, credential);
+    await updPass(user, newPass);
     okEl.textContent = '✓ Contraseña actualizada correctamente.';
     setTimeout(() => closeChangePass(), 2000);
   } catch(e) {
