@@ -1675,30 +1675,30 @@ function renderAjustes() {
   }).catch(()=>{});
 }
 
-function applyAjustesUI(photoURL, name, provider) {
+ function applyAjustesUI(photoURL, name, provider) {
   const img = document.getElementById('aj-avatar-img');
   const letter = document.getElementById('aj-avatar-letter');
   const wrap = document.getElementById('aj-avatar-wrap');
-  if(photoURL) {
-    if(img) { img.src=photoURL; img.style.display='block'; if(letter) letter.style.display='none'; }
+  if(photoURL && photoURL.length > 10) {
+    if(img) { img.src=photoURL; img.style.display='block'; }
+    if(letter) letter.style.display='none';
   } else {
     if(img) img.style.display='none';
-    if(letter) { letter.style.display='flex'; letter.textContent=(currentUser?.displayName||currentUser?.email||'DJ')[0].toUpperCase(); }
+    if(letter) { letter.style.display='flex'; letter.textContent=(name||currentUser?.displayName||currentUser?.email||'DJ')[0].toUpperCase(); }
     if(wrap) wrap.style.background='var(--acc)';
   }
   const dispName = document.getElementById('aj-display-name');
   const dvEl = document.getElementById('aj-name-display-val');
   const emailEl = document.getElementById('aj-display-email');
   const nameInput = document.getElementById('aj-name-input');
-  if(dispName) dispName.textContent = name;
-  if(dvEl) dvEl.textContent = name;
-  if(emailEl) emailEl.textContent = currentUser?.email||'';
-  if(nameInput && !nameInput.dataset.editing) nameInput.value = name;
+  if(dispName) dispName.textContent = name || '';
+  if(dvEl) { dvEl.textContent = name || ''; dvEl.style.display='block'; }
+  if(emailEl) emailEl.textContent = currentUser?.email || '';
+  if(nameInput) nameInput.value = name || '';
   if(provider !== null) {
     const passSection = document.getElementById('aj-pass-section');
     if(passSection) passSection.style.display = provider === 'email' ? '' : 'none';
   }
-  updateSidebarAvatar(photoURL || null, name);
 }
 
 window.handlePhotoUpload = function(input) {
