@@ -55,6 +55,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
+    await saveUserProfile(user);
     await loadFromFirestore();
     render();
     updateCounts();
@@ -80,7 +81,12 @@ async function loadFromFirestore() {
 async function saveToFirestore(ev) {
   if (!currentUser) return;
   try {
-    await setDoc(doc(db, 'events', ev.id), { ...ev, userId: currentUser.uid });
+    await setDoc(doc(db, 'events', ev.id), {
+      ...ev,
+      userId: currentUser.uid,
+      userEmail: currentUser.email || '',
+      userName: currentUser.displayName || currentUser.email || 'DJ'
+    });
   } catch(e) { console.error('Save error:', e); }
 }
 
@@ -117,6 +123,19 @@ window.logout = async function() {
 
 function setAuthError(msg) {
   document.getElementById('auth-error').textContent = msg;
+}
+
+// ===================== SAVE USER PROFILE =====================
+async function saveUserProfile(user) {
+  try {
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      email: user.email || '',
+      name: user.displayName || user.email || 'DJ',
+      photoURL: user.photoURL || '',
+      lastLogin: new Date().toISOString()
+    }, { merge: true });
+  } catch(e) { console.error('Profile save error:', e); }
 }
 
 // ===================== OVERRIDE SAVE/DELETE =====================
