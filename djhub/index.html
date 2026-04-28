@@ -292,6 +292,22 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--b3); border-radius: 3px; }
 
+/* GENRE SLIDER */
+.genre-row { display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px 12px;margin-bottom:6px }
+.genre-label { font-size:13px;font-weight:500;min-width:90px;flex-shrink:0 }
+.genre-slider-wrap { flex:1;position:relative }
+.genre-slider {
+  -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;
+  background:linear-gradient(to right, var(--danger) 0%, var(--pend) 50%, var(--paid) 100%);
+}
+.genre-slider::-webkit-slider-thumb { -webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--txt);border:2px solid var(--s1);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4) }
+.genre-slider::-moz-range-thumb { width:18px;height:18px;border-radius:50%;background:var(--txt);border:2px solid var(--s1);cursor:pointer }
+.genre-slider-labels { display:flex;justify-content:space-between;margin-top:3px }
+.genre-slider-lbl { font-size:9px;color:var(--dim) }
+.genre-rating-txt { font-size:11px;font-weight:500;min-width:70px;text-align:right }
+.genre-del { color:var(--dim);cursor:pointer;font-size:18px;padding:0 4px;transition:color .15s;flex-shrink:0 }
+.genre-del:hover { color:var(--danger) }
+
 /* ===================== LAYOUT ===================== */
 .shell { display: flex; height: 100vh; width: 100%; }
 
@@ -860,7 +876,8 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       <div class="fg">
         <label class="fl">Géneros del set</label>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input class="fi" id="f-genre-input" placeholder="Ej: reggaeton, cumbia, guaracha…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addGenre()}">
+          <input class="fi" id="f-genre-input" placeholder="Ej: reggaeton, cumbia, guaracha…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addGenre()}" list="saved-genres-list">
+          <datalist id="saved-genres-list"></datalist>
           <button onclick="addGenre()" style="background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:0 16px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;white-space:nowrap">+ Agregar</button>
         </div>
         <div id="genre-tags" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -987,10 +1004,11 @@ function vStats(name) {
       if(!g) return;
       gMap[g]=(gMap[g]||0)+1;
       const gr = ratings[g];
-      if(gr === 'funciono') gSucc[g]=(gSucc[g]||0)+1;
-      // 'parcial' counts as 0.5 success
+      if(typeof gr === 'number') {
+        // numeric slider 0-100 → convert to 0-1 success score
+        gSucc[g]=(gSucc[g]||0)+(gr/100);
+      } else if(gr === 'funciono') gSucc[g]=(gSucc[g]||0)+1;
       else if(gr === 'parcial') gSucc[g]=(gSucc[g]||0)+0.5;
-      // legacy fallback: if no per-genre rating, use overall set result
       else if(!gr && ['bueno','excelente'].includes(e.review?.rating)) gSucc[g]=(gSucc[g]||0)+1;
     });
   });
@@ -1246,14 +1264,38 @@ function renderAnalytics() {
   }).join(''):'<div class="empty"><div class="empty-txt" style="color:var(--dim)">Cargá fechas para ver el ranking.</div></div>';
 }
 
+// ===================== SAVED GENRES =====================
+const GENRES_CACHE_KEY = 'djhub_saved_genres';
+
+function getSavedGenres() {
+  try { return JSON.parse(localStorage.getItem(GENRES_CACHE_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveGenreToHistory(genre) {
+  const saved = getSavedGenres();
+  if(!saved.includes(genre)) {
+    saved.unshift(genre);
+    if(saved.length > 30) saved.pop(); // keep max 30
+    try { localStorage.setItem(GENRES_CACHE_KEY, JSON.stringify(saved)); } catch(e) {}
+  }
+  updateGenreDatalist();
+}
+
+function updateGenreDatalist() {
+  const dl = document.getElementById('saved-genres-list');
+  if(!dl) return;
+  const saved = getSavedGenres();
+  dl.innerHTML = saved.map(g=>`<option value="${g}">`).join('');
+}
+
 // GENRE TAG SYSTEM
 function addGenre() {
   const inp = document.getElementById('f-genre-input');
   const raw = inp.value.trim();
   if(!raw) return;
-  // support comma-separated entry
   raw.split(',').map(g=>g.trim().toLowerCase()).filter(Boolean).forEach(g=>{
-    if(!genreRatings.hasOwnProperty(g)) genreRatings[g] = null;
+    if(!genreRatings.hasOwnProperty(g)) genreRatings[g] = 50; // default middle
+    saveGenreToHistory(g);
   });
   inp.value = '';
   renderGenreTags();
@@ -1264,9 +1306,22 @@ function removeGenre(g) {
   renderGenreTags();
 }
 
-function setGenreRating(g, r) {
-  genreRatings[g] = genreRatings[g] === r ? null : r; // toggle
-  renderGenreTags();
+function sliderToRating(val) {
+  const v = parseInt(val);
+  if(v <= 20) return 'no';
+  if(v <= 45) return 'parcial_bajo';
+  if(v <= 55) return 'parcial';
+  if(v <= 80) return 'parcial_alto';
+  return 'funciono';
+}
+
+function ratingToLabel(val) {
+  const v = parseInt(val);
+  if(v <= 20) return { text: 'No funcionó', color: 'var(--danger)' };
+  if(v <= 45) return { text: 'Más o menos', color: 'var(--pend)' };
+  if(v <= 55) return { text: 'Regular', color: 'var(--pend)' };
+  if(v <= 80) return { text: 'Bastante bien', color: '#a8e063' };
+  return { text: 'Funcionó', color: 'var(--paid)' };
 }
 
 function renderGenreTags() {
@@ -1321,24 +1376,32 @@ function openNew() {
   document.getElementById('submit-btn').textContent='Guardar fecha';
   clearT(); clearR(); clearRv(); selPay('pend');
   renderGenreTags();
+  updateGenreDatalist();
   document.getElementById('overlay').classList.add('open');
 }
 
 function openEdit(id) {
   const ev=events.find(e=>e.id===id); if(!ev) return;
   editId=id; sT=ev.type||null; sPay=ev.payStatus||'pend'; sR=ev.review?.rating||null; sRv=ev.review?.wouldReturn||null;
-  // restore genreRatings — normalize ALL keys to lowercase and merge duplicates
-  genreRatings = {};
-  const rawRatings = ev.genreRatings || {};
-  // First pass: load from genreRatings object, normalizing keys
-  Object.keys(rawRatings).forEach(g => {
-    const key = g.trim().toLowerCase();
-    if(key) genreRatings[key] = rawRatings[g] || genreRatings[key] || null;
-  });
-  // Second pass: import from legacy genres string, skip if already present
-  (ev.genres||'').split(',').map(g=>g.trim().toLowerCase()).filter(Boolean).forEach(g=>{
-    if(!genreRatings.hasOwnProperty(g)) genreRatings[g] = null;
-  });
+   // restore genreRatings — normalize ALL keys to lowercase, convert to numbers
+   genreRatings = {};
+   const rawRatings = ev.genreRatings || {};
+   Object.keys(rawRatings).forEach(g => {
+     const key = g.trim().toLowerCase();
+     if(!key) return;
+     const v = rawRatings[g];
+     if(typeof v === 'number') genreRatings[key] = v;
+     else if(v === 'funciono') genreRatings[key] = 90;
+     else if(v === 'parcial_alto') genreRatings[key] = 70;
+     else if(v === 'parcial') genreRatings[key] = 50;
+     else if(v === 'parcial_bajo') genreRatings[key] = 30;
+     else if(v === 'no') genreRatings[key] = 10;
+     else genreRatings[key] = 50;
+   });
+   // import from legacy genres string
+   (ev.genres||'').split(',').map(g=>g.trim().toLowerCase()).filter(Boolean).forEach(g=>{
+     if(!genreRatings.hasOwnProperty(g)) genreRatings[g] = 50;
+   });
   document.getElementById('m-title').textContent='Editar fecha';
   document.getElementById('f-venue').value=ev.venue;
   document.getElementById('f-date').value=ev.date;
