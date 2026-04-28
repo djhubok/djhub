@@ -55,8 +55,9 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
-    // Show change password only for email users
-    const isEmailUser = user.providerData?.[0]?.providerId !== 'google.com';
+    // Show change password only for email/password users (not Google)
+    const isEmailUser = !user.email?.toLowerCase().includes('@gmail.com') && 
+                        user.providerData?.every(p => p.providerId !== 'google.com');
     const cpBtn = document.getElementById('change-pass-btn');
     if(cpBtn) cpBtn.style.display = isEmailUser ? '' : 'none';
     await saveUserProfile(user);
