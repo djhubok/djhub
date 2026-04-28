@@ -613,7 +613,12 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       <div style="flex:1;height:1px;background:var(--b1)"></div>
     </div>
     <input id="auth-email" type="email" placeholder="tu@email.com" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:10px">
-    <input id="auth-pass" type="password" placeholder="Contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:14px" onkeydown="if(event.key==='Enter')loginEmail()">
+    <div style="position:relative;margin-bottom:14px">
+      <input id="auth-pass" type="password" placeholder="Contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:11px 44px 11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')loginEmail()">
+      <button type="button" onclick="togglePass('auth-pass','eye-login')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center">
+        <svg id="eye-login" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
     <button onclick="loginEmail()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:12px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;cursor:pointer">Entrar</button>
     <div id="auth-error" style="margin-top:12px;font-size:12px;color:var(--danger);text-align:center;min-height:18px"></div>
     <div style="margin-top:20px;font-size:11px;color:var(--dim);text-align:center">Para acceder necesitás una cuenta autorizada por el administrador.</div>
@@ -630,15 +635,24 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
     <div style="padding:20px 22px 24px">
       <div style="margin-bottom:12px">
         <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Contraseña actual</label>
-        <input id="cp-current" type="password" placeholder="Tu contraseña actual" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <div style="position:relative">
+          <input id="cp-current" type="password" placeholder="Tu contraseña actual" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 44px 10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+          <button type="button" onclick="togglePass('cp-current','eye-c')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center"><svg id="eye-c" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
       <div style="margin-bottom:12px">
         <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Nueva contraseña</label>
-        <input id="cp-new" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <div style="position:relative">
+          <input id="cp-new" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 44px 10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+          <button type="button" onclick="togglePass('cp-new','eye-n')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center"><svg id="eye-n" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
       <div style="margin-bottom:12px">
         <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Repetir nueva contraseña</label>
-        <input id="cp-confirm" type="password" placeholder="Repetí la nueva contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+        <div style="position:relative">
+          <input id="cp-confirm" type="password" placeholder="Repetí la nueva contraseña" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:10px 44px 10px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+          <button type="button" onclick="togglePass('cp-confirm','eye-cf')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;display:flex;align-items:center"><svg id="eye-cf" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
       </div>
       <div id="cp-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;min-height:18px"></div>
       <div id="cp-success" style="font-size:12px;color:var(--paid);margin-bottom:12px;min-height:18px"></div>
@@ -1309,6 +1323,19 @@ function saveEv() {
   const evToSave = editId ? events.find(e=>e.id===editId) : events[events.length-1];
   if(evToSave && window._firebaseSave) window._firebaseSave(evToSave);
 }
+
+// TOGGLE PASSWORD VISIBILITY
+window.togglePass = function(inputId, eyeId) {
+  const input = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  if(input.type === 'password') {
+    input.type = 'text';
+    eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    input.type = 'password';
+    eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+};
 
 // CHANGE PASSWORD
 window.openChangePass = function() {
