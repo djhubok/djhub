@@ -801,7 +801,7 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   </div>
   <button id="change-pass-btn" onclick="openChangePass()" style="display:none;width:100%;background:none;border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:color .15s,border-color .15s;margin-bottom:6px">Cambiar contraseña</button>
   <button onclick="logout()" style="width:100%;background:none;border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:color .15s,border-color .15s">Cerrar sesión</button>
-  <div class="version-tag" style="margin-top:10px">v2.0 — firebase</div>
+  <div class="version-tag" style="margin-top:10px">v2.1 — firebase</div>
 </div>
 </aside>
 
@@ -1635,11 +1635,10 @@ function renderAjustes() {
   if(!currentUser) return;
   const uid = currentUser.uid;
 
-  // Show cached data IMMEDIATELY (no waiting for Firestore)
-  const cachedPhoto = localStorage.getItem('djhub_photo_'+uid) || currentUser.photoURL;
+  // Show cached data IMMEDIATELY
+  const cachedPhoto = localStorage.getItem('djhub_photo_'+uid) || currentUser.photoURL || null;
   const cachedName = localStorage.getItem('djhub_name_'+uid) || currentUser.displayName || currentUser.email || '';
   applyAjustesUI(cachedPhoto, cachedName, null);
-  renderSettingsUI();
 
   // Then update from Firestore in background
   getDoc(doc(db, 'users', uid)).then(snap => {
@@ -1837,6 +1836,8 @@ function renderPrefGenres() {
     container.innerHTML = '<span style="font-size:12px;color:var(--dim)">Sin géneros guardados todavía.</span>';
     return;
   }
+  // Also update datalist so they appear as suggestions
+  updateGenreDatalist();
   container.innerHTML = genres.map((g, idx) =>
     '<div style="display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:20px;padding:5px 12px">'
     + '<span style="font-size:12px;font-weight:500">' + g + '</span>'
