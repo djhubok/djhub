@@ -1607,20 +1607,23 @@ function renderAjustes() {
 window.handlePhotoUpload = function(input) {
   const file = input.files[0];
   if(!file) return;
-  if(file.size > 2*1024*1024) { alert('La imagen debe pesar menos de 2MB.'); return; }
+  if(file.size > 3*1024*1024) { alert('La imagen debe pesar menos de 3MB.'); return; }
+  // Show immediately using object URL (no FileReader needed)
+  const objectUrl = URL.createObjectURL(file);
+  const img = document.getElementById('aj-avatar-img');
+  const letter = document.getElementById('aj-avatar-letter');
+  if(img) { img.src=objectUrl; img.style.display='block'; if(letter) letter.style.display='none'; }
+  updateSidebarAvatar(objectUrl, null);
+  // Also read as base64 for persistence
   const reader = new FileReader();
   reader.onload = e => {
     const dataUrl = e.target.result;
-    localStorage.setItem('djhub_photo_'+currentUser.uid, dataUrl);
-    // Update sidebar avatar
-    updateSidebarAvatar(dataUrl, null);
-    // Update ajustes preview
-    const img = document.getElementById('aj-avatar-img');
-    const letter = document.getElementById('aj-avatar-letter');
-    if(img) { img.src=dataUrl; img.style.display='block'; if(letter) letter.style.display='none'; }
-    // Save to Firestore
+    try { localStorage.setItem('djhub_photo_'+(window._auth||auth).currentUser.uid, dataUrl); } catch(err) {}
+    // Save to Firestore (truncate if too large)
     const _u = (window._auth||auth).currentUser;
-    if(_u) (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
+    if(_u && dataUrl.length < 500000) {
+      (window._setDoc||setDoc)((window._doc||doc)((window._db||db),'users',_u.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
+    }
   };
   reader.readAsDataURL(file);
 };
