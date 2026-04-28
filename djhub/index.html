@@ -851,6 +851,9 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
     </div>
     <div class="modal-body">
       <div id="smart-tip"></div>
+      <div id="delete-ev-wrap" style="display:none;margin-bottom:16px">
+        <button onclick="deleteCurrentEvent()" style="width:100%;background:none;border:1px solid rgba(255,107,107,.3);border-radius:10px;padding:10px;color:var(--danger);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(255,107,107,.08)'" onmouseout="this.style.background='none'">🗑 Eliminar esta fecha</button>
+      </div>
 
       <div class="fg">
         <label class="fl">Nombre del lugar</label>
@@ -1371,6 +1374,7 @@ function openNew() {
   document.getElementById('smart-tip').innerHTML='';
   document.getElementById('rev-wrap').style.display='none';
   document.getElementById('submit-btn').textContent='Guardar fecha';
+  document.getElementById('delete-ev-wrap').style.display='none';
   clearT(); clearR(); clearRv(); selPay('pend');
   renderGenreTags();
   updateGenreDatalist();
@@ -1422,10 +1426,23 @@ function openEdit(id) {
     clearRv(); if(sRv) document.getElementById('rv-'+sRv).className='chip c-'+{no:'no',maybe:'tal',yes:'si'}[sRv];
   }
   document.getElementById('submit-btn').textContent='Guardar cambios';
+  document.getElementById('delete-ev-wrap').style.display='';
   document.getElementById('overlay').classList.add('open');
 }
 
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+window.deleteCurrentEvent = async function() {
+  if(!editId) return;
+  if(!confirm('¿Eliminar esta fecha? Esta acción no se puede deshacer.')) return;
+  events = events.filter(e => e.id !== editId);
+  if(window._firebaseDelete) window._firebaseDelete(editId);
+  if(currentUser) { try { localStorage.setItem('djhub_cache_'+currentUser.uid, JSON.stringify({events, ts: Date.now()})); } catch(e) {} }
+  closeModal();
+  render();
+  if(document.getElementById('page-lugares').classList.contains('active')) renderVenues();
+  if(document.getElementById('page-ganancias').classList.contains('active')) renderAnalytics();
+};
 
 function onVenueType() {
   const name=document.getElementById('f-venue').value.trim();
