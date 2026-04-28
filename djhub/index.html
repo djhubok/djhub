@@ -1663,7 +1663,7 @@ setupNotifications();
 
 // ===================== AJUSTES =====================
 function renderAjustes() {
-  const uid = currentUser?.uid || localStorage.getItem('djhub_last_uid');
+  const uid = (window._auth?.currentUser?.uid) || localStorage.getItem('djhub_last_uid');
   if(!uid) return;
 
   // Always read from localStorage — most reliable source
@@ -1856,7 +1856,7 @@ window.addPrefGenre = function() {
   const inp = document.getElementById('pref-genre-input');
   const raw = inp.value.trim().toLowerCase();
   if(!raw) return;
-  const uid = currentUser?.uid || localStorage.getItem('djhub_last_uid');
+  const uid = (window._auth?.currentUser?.uid) || localStorage.getItem('djhub_last_uid');
   if(!uid) { alert('Error: no hay usuario activo.'); return; }
   const genres = getPrefGenres();
   raw.split(',').map(g=>g.trim()).filter(Boolean).forEach(g => {
