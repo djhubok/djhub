@@ -59,8 +59,14 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
-    document.getElementById('user-name').textContent = user.displayName || user.email;
-    document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
+    const savedName = localStorage.getItem('djhub_name_'+user.uid) || user.displayName || user.email || '';
+    const savedPhoto = user.photoURL || localStorage.getItem('djhub_photo_'+user.uid);
+    document.getElementById('user-name').textContent = savedName;
+    if(savedPhoto) {
+      document.getElementById('user-avatar').innerHTML = '<img src="'+savedPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    } else {
+      document.getElementById('user-avatar').textContent = (savedName||'DJ')[0].toUpperCase();
+    }
     // INSTANT LOAD: show cached data immediately while fetching fresh from Firestore
     const cacheKey = 'djhub_cache_' + user.uid;
     try {
@@ -780,6 +786,10 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="22 20 2 20"/></svg>
       Ganancias
     </button>
+    <button class="nav-btn" onclick="goto('ajustes')" id="nav-ajustes">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Ajustes
+    </button>
   </nav>
   <div class="sidebar-bottom">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--s2);border-radius:10px;border:1px solid var(--b1)">
@@ -828,6 +838,59 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         Volver a lugares
       </button>
       <div id="detail-wrap"></div>
+    </div>
+
+    <!-- PAGE: AJUSTES -->
+    <div class="page" id="page-ajustes">
+      <div class="scroll-inner" style="max-width:560px;margin:0 auto">
+
+        <!-- Profile card -->
+        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:28px 24px;margin-bottom:20px;text-align:center">
+          <div style="position:relative;display:inline-block;margin-bottom:16px">
+            <div id="aj-avatar-wrap" style="width:80px;height:80px;border-radius:50%;background:var(--acc);color:#06060a;font-family:'Bebas Neue',sans-serif;font-size:36px;display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden;cursor:pointer;border:3px solid var(--b2)" onclick="document.getElementById('aj-photo-input').click()" title="Cambiar foto">
+              <img id="aj-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+              <span id="aj-avatar-letter">N</span>
+            </div>
+            <div onclick="document.getElementById('aj-photo-input').click()" style="position:absolute;bottom:0;right:0;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#06060a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">✎</div>
+            <input type="file" id="aj-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
+          </div>
+          <div id="aj-display-name" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.02em;margin-bottom:4px"></div>
+          <div id="aj-display-email" style="font-size:13px;color:var(--muted)"></div>
+        </div>
+
+        <!-- Nombre -->
+        <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Nombre</div>
+          <div style="display:flex;gap:10px">
+            <input id="aj-name-input" class="fi" placeholder="Tu nombre o alias de DJ" style="flex:1">
+            <button onclick="saveName()" style="background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:0 18px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;white-space:nowrap">Guardar</button>
+          </div>
+          <div id="aj-name-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+        </div>
+
+        <!-- Contraseña — solo email users -->
+        <div id="aj-pass-section" style="display:none;background:var(--s1);border:1px solid var(--b1);border-radius:var(--radius);padding:20px 24px;margin-bottom:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Cambiar contraseña</div>
+          <div style="margin-bottom:10px;position:relative">
+            <input id="aj-cur-pass" type="password" class="fi" placeholder="Contraseña actual" style="padding-right:40px">
+            <button type="button" onclick="togglePass('aj-cur-pass','eye-aj1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj1" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div style="margin-bottom:10px;position:relative">
+            <input id="aj-new-pass" type="password" class="fi" placeholder="Nueva contraseña (mín. 6 caracteres)" style="padding-right:40px">
+            <button type="button" onclick="togglePass('aj-new-pass','eye-aj2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div style="margin-bottom:12px;position:relative">
+            <input id="aj-con-pass" type="password" class="fi" placeholder="Repetir nueva contraseña" style="padding-right:40px">
+            <button type="button" onclick="togglePass('aj-con-pass','eye-aj3')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)"><svg id="eye-aj3" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <button onclick="savePassword()" style="width:100%;background:var(--acc);color:#06060a;border:none;border-radius:10px;padding:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;cursor:pointer">Cambiar contraseña</button>
+          <div id="aj-pass-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+        </div>
+
+        <!-- Cerrar sesión -->
+        <button onclick="logout()" style="width:100%;background:none;border:1px solid var(--b1);border-radius:var(--radius);padding:13px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--danger)';this.style.borderColor='rgba(255,107,107,.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--b1)'">Cerrar sesión</button>
+
+      </div>
     </div>
 
     <!-- PAGE: GANANCIAS -->
@@ -1510,6 +1573,103 @@ if('Notification' in window&&Notification.permission==='default') Notification.r
 setupNotifications();
 
 
+
+// ===================== AJUSTES =====================
+function renderAjustes() {
+  if(!currentUser) return;
+  // Avatar
+  const photoURL = currentUser.photoURL || localStorage.getItem('djhub_photo_'+currentUser.uid);
+  const img = document.getElementById('aj-avatar-img');
+  const letter = document.getElementById('aj-avatar-letter');
+  const wrap = document.getElementById('aj-avatar-wrap');
+  if(photoURL) {
+    img.src = photoURL; img.style.display='block'; letter.style.display='none';
+  } else {
+    img.style.display='none'; letter.style.display='flex';
+    letter.textContent = (currentUser.displayName||currentUser.email||'DJ')[0].toUpperCase();
+    wrap.style.background = 'var(--acc)';
+  }
+  // Name & email
+  const savedName = localStorage.getItem('djhub_name_'+currentUser.uid) || currentUser.displayName || currentUser.email || '';
+  document.getElementById('aj-display-name').textContent = savedName;
+  document.getElementById('aj-display-email').textContent = currentUser.email||'';
+  document.getElementById('aj-name-input').value = savedName;
+  // Password section — only for email users
+  getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
+    const provider = snap.exists() ? snap.data().provider : 'google';
+    document.getElementById('aj-pass-section').style.display = provider === 'email' ? '' : 'none';
+  }).catch(()=>{});
+}
+
+window.handlePhotoUpload = function(input) {
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024) { alert('La imagen debe pesar menos de 2MB.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    localStorage.setItem('djhub_photo_'+currentUser.uid, dataUrl);
+    // Update sidebar avatar
+    updateSidebarAvatar(dataUrl, null);
+    // Update ajustes preview
+    const img = document.getElementById('aj-avatar-img');
+    const letter = document.getElementById('aj-avatar-letter');
+    if(img) { img.src=dataUrl; img.style.display='block'; if(letter) letter.style.display='none'; }
+    // Save to Firestore
+    if(currentUser) setDoc(doc(db,'users',currentUser.uid),{photoURL: dataUrl},{merge:true}).catch(()=>{});
+  };
+  reader.readAsDataURL(file);
+};
+
+function updateSidebarAvatar(photoURL, name) {
+  const avatarEl = document.getElementById('user-avatar');
+  if(!avatarEl) return;
+  if(photoURL) {
+    avatarEl.innerHTML = '<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+  } else {
+    avatarEl.innerHTML = (name||currentUser?.displayName||currentUser?.email||'DJ')[0].toUpperCase();
+  }
+  if(name) {
+    const nameEl = document.getElementById('user-name');
+    if(nameEl) nameEl.textContent = name;
+  }
+}
+
+window.saveName = async function() {
+  const name = document.getElementById('aj-name-input').value.trim();
+  const msg = document.getElementById('aj-name-msg');
+  if(!name) { msg.textContent='Escribí un nombre.'; msg.style.color='var(--danger)'; return; }
+  try {
+    localStorage.setItem('djhub_name_'+currentUser.uid, name);
+    await setDoc(doc(db,'users',currentUser.uid),{name},{merge:true});
+    document.getElementById('aj-display-name').textContent = name;
+    updateSidebarAvatar(null, name);
+    msg.textContent='✓ Nombre guardado.'; msg.style.color='var(--paid)';
+    setTimeout(()=>msg.textContent='',2500);
+  } catch(e) { msg.textContent='Error al guardar.'; msg.style.color='var(--danger)'; }
+};
+
+window.savePassword = async function() {
+  const cur = document.getElementById('aj-cur-pass').value;
+  const nw  = document.getElementById('aj-new-pass').value;
+  const con = document.getElementById('aj-con-pass').value;
+  const msg = document.getElementById('aj-pass-msg');
+  msg.textContent='';
+  if(!cur||!nw||!con){ msg.textContent='Completá todos los campos.'; msg.style.color='var(--danger)'; return; }
+  if(nw.length<6){ msg.textContent='Mínimo 6 caracteres.'; msg.style.color='var(--danger)'; return; }
+  if(nw!==con){ msg.textContent='Las contraseñas no coinciden.'; msg.style.color='var(--danger)'; return; }
+  try {
+    const credential = window._EmailAuthProvider.credential(currentUser.email, cur);
+    await window._reauthenticateWithCredential(currentUser, credential);
+    await window._updatePassword(currentUser, nw);
+    ['aj-cur-pass','aj-new-pass','aj-con-pass'].forEach(id=>document.getElementById(id).value='');
+    msg.textContent='✓ Contraseña actualizada.'; msg.style.color='var(--paid)';
+    setTimeout(()=>msg.textContent='',2500);
+  } catch(e) {
+    msg.textContent = (e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') ? 'Contraseña actual incorrecta.' : 'Error: '+e.message;
+    msg.style.color='var(--danger)';
+  }
+};
 
 // TOGGLE PASSWORD VISIBILITY
 window.togglePass = function(inputId, eyeId) {
