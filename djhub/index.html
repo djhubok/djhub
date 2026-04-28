@@ -1334,6 +1334,35 @@ function saveEv() {
   if(evToSave && window._firebaseSave) window._firebaseSave(evToSave);
 }
 
+// CLOSE ON BACKDROP
+document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// NOTIFICATIONS
+function setupNotifications() {
+  const upcoming=events.filter(e=>!isPast(e.date));
+  upcoming.forEach(ev=>{
+    const dt=new Date(ev.date+'T'+(ev.startTime||'20:00')), now=new Date(), diff=dt-now;
+    if(diff>0&&diff<=86400000) showBanner(`🎛 Fecha hoy — ${ev.venue}`,`${ev.startTime||'??:??'} → ${ev.endTime||'?'}${ev.pay?' · '+fmtM(ev.pay):''}`);
+    const notifAt=diff-3600000;
+    if(notifAt>0&&notifAt<604800000) setTimeout(()=>{
+      if('Notification' in window&&Notification.permission==='granted') new Notification('DJHub — Fecha en 1 hora',{body:`${ev.venue} · ${ev.startTime||''}`});
+      else showBanner(`⏰ En 1 hora — ${ev.venue}`,`Preparate para tu set`);
+    },notifAt);
+  });
+}
+
+function showBanner(t,b) {
+  const el=document.createElement('div'); el.className='notif-banner';
+  el.innerHTML=`<div class="notif-t">${t}</div><div class="notif-b">${b}</div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);},5000);
+}
+
+if('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
+
+// load() is triggered by Firebase onAuthStateChanged
+setupNotifications();
+
 // TOGGLE PASSWORD VISIBILITY
 window.togglePass = function(inputId, eyeId) {
   const input = document.getElementById(inputId);
@@ -1388,35 +1417,6 @@ window.doChangePass = async function() {
     }
   }
 };
-
-// CLOSE ON BACKDROP
-document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
-
-// NOTIFICATIONS
-function setupNotifications() {
-  const upcoming=events.filter(e=>!isPast(e.date));
-  upcoming.forEach(ev=>{
-    const dt=new Date(ev.date+'T'+(ev.startTime||'20:00')), now=new Date(), diff=dt-now;
-    if(diff>0&&diff<=86400000) showBanner(`🎛 Fecha hoy — ${ev.venue}`,`${ev.startTime||'??:??'} → ${ev.endTime||'?'}${ev.pay?' · '+fmtM(ev.pay):''}`);
-    const notifAt=diff-3600000;
-    if(notifAt>0&&notifAt<604800000) setTimeout(()=>{
-      if('Notification' in window&&Notification.permission==='granted') new Notification('DJHub — Fecha en 1 hora',{body:`${ev.venue} · ${ev.startTime||''}`});
-      else showBanner(`⏰ En 1 hora — ${ev.venue}`,`Preparate para tu set`);
-    },notifAt);
-  });
-}
-
-function showBanner(t,b) {
-  const el=document.createElement('div'); el.className='notif-banner';
-  el.innerHTML=`<div class="notif-t">${t}</div><div class="notif-b">${b}</div>`;
-  document.body.appendChild(el);
-  setTimeout(()=>{el.style.transition='opacity .5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);},5000);
-}
-
-if('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
-
-// load() is triggered by Firebase onAuthStateChanged
-setupNotifications();
 </script>
 </div>
 </div>
