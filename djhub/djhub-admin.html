@@ -625,7 +625,18 @@ window.confirmAction = async function() {
         body: JSON.stringify({ localId: uid, idToken: adminToken })
       });
 
-      // 3. Delete all Firestore data
+      // 3. Add email to blacklist so they can never log in again
+      const deletedUser = allUsers.find(u => u.uid === uid);
+      if(deletedUser?.email) {
+        const blRef = doc(db, 'admin', 'blacklist');
+        const blDoc = await getDoc(blRef);
+        const currentList = blDoc.exists() ? (blDoc.data().emails || []) : [];
+        if(!currentList.includes(deletedUser.email.toLowerCase())) {
+          currentList.push(deletedUser.email.toLowerCase());
+          await setDoc(blRef, { emails: currentList });
+        }
+      }
+      // 4. Delete all Firestore data
       const userEvents = allEvents.filter(e => e.userId === uid);
       for(const ev of userEvents) {
         await deleteDoc(doc(db, 'events', ev.id));
