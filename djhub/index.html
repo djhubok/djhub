@@ -61,6 +61,16 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app-screen').style.display = 'flex';
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'DJ')[0].toUpperCase();
+    // INSTANT LOAD: show cached data immediately while fetching fresh from Firestore
+    const cacheKey = 'djhub_cache_' + user.uid;
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey));
+      if(cached && cached.events) {
+        events = cached.events;
+        render(); updateCounts();
+      }
+    } catch(e) {}
+
     // Run ALL checks in parallel — much faster than sequential
     const [userDoc, blacklistDoc, suspendedDoc, eventsSnap] = await Promise.all([
       getDoc(doc(db, 'users', user.uid)).catch(()=>null),
@@ -96,6 +106,8 @@ onAuthStateChanged(auth, async (user) => {
     if(eventsSnap) events = eventsSnap.docs.map(d=>({...d.data(),id:d.id}));
     // Save profile in background — don't block UI
     saveUserProfile(user);
+    // Save to cache for instant load next time
+    try { localStorage.setItem(cacheKey, JSON.stringify({events, ts: Date.now()})); } catch(e) {}
     render(); updateCounts(); setupNotifications();
     // Start suspension check interval for this session
     if(window._suspensionInterval) clearInterval(window._suspensionInterval);
