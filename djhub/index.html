@@ -169,8 +169,9 @@ async function saveToFirestore(ev) {
 }
 
 async function deleteFromFirestore(id) {
-  if (!currentUser) return;
-  try { await deleteDoc(doc(db, 'events', id)); } catch(e) { console.error('Delete error:', e); }
+ async function deleteFromFirestore(id) {
+   const u = currentUser || auth.currentUser;
+   if (!u) { console.error('No user for delete'); return; }
 }
 
 // ===================== AUTH ACTIONS =====================
@@ -1476,7 +1477,7 @@ window.deleteCurrentEvent = async function() {
   if(!confirm('¿Eliminar esta fecha? Esta acción no se puede deshacer.')) return;
   events = events.filter(e => e.id !== editId);
   if(window._firebaseDelete) window._firebaseDelete(editId);
-  if(currentUser) { try { localStorage.setItem('djhub_cache_'+currentUser.uid, JSON.stringify({events, ts: Date.now()})); } catch(e) {} }
+  const _u = window._auth?.currentUser; if(_u) { try { localStorage.setItem('djhub_cache_'+_u.uid, JSON.stringify({events, ts: Date.now()})); } catch(e) {} }
   closeModal();
   render();
   if(document.getElementById('page-lugares').classList.contains('active')) renderVenues();
