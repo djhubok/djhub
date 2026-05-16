@@ -75,6 +75,14 @@ onAuthStateChanged(auth, async (user) => {
     const savedName = user.displayName || user.email || '';
     const photoURL = user.photoURL || null;
     document.getElementById('user-name').textContent = savedName;
+    // Sync mobile user bar
+    const mobName = document.getElementById('mob-name');
+    const mobAvatar = document.getElementById('mob-avatar');
+    if(mobName) mobName.textContent = savedName;
+    if(mobAvatar) {
+      if(photoURL) mobAvatar.innerHTML = '<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      else mobAvatar.textContent = (savedName||'DJ')[0].toUpperCase();
+    }
     if(photoURL) {
       document.getElementById('user-avatar').innerHTML = '<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
@@ -775,9 +783,13 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .an-card { padding: 14px 12px !important; }
   .an-val { font-size: 26px !important; }
 
-  /* Chart — no horizontal scroll, bars adapt */
+  /* Chart — force horizontal bars */
   #an-chart { overflow-x: hidden !important; }
-  #an-chart > div[style*="display:flex"] { gap: 6px !important; }
+  #an-chart div[style*="flex-direction:row"],
+  #an-chart div[style*="align-items:flex-end"] {
+    flex-direction: row !important;
+    display: flex !important;
+  }
 
   /* Auth */
   #auth-screen { padding: 0 12px !important; }
@@ -830,6 +842,10 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .an-val { font-size: 22px !important; }
   .nav-btn { font-size: 9px !important; }
   .scroll { padding: 10px !important; }
+}
+
+@media (max-width: 768px) {
+  #mobile-user-bar { display: flex !important; }
 }
 </style>
 </head>
@@ -949,6 +965,15 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         Nueva fecha
       </button>
     </div>
+  </div>
+
+  <!-- MOBILE USER BAR -->
+  <div id="mobile-user-bar" style="display:none;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="mob-avatar" style="width:26px;height:26px;border-radius:50%;background:var(--acc);color:#06060a;font-family:'Bebas Neue',sans-serif;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"></div>
+      <span id="mob-name" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <button onclick="logout()" style="background:none;border:1px solid var(--b1);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif">Cerrar sesión</button>
   </div>
 
   <div class="scroll">
