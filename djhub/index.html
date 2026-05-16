@@ -636,6 +636,11 @@ body {
 .fi:focus { border-color: rgba(232,255,71,.35); box-shadow: 0 0 0 3px rgba(232,255,71,.06); }
 .fi::placeholder { color: var(--dim); }
 textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
+input[type="date"].fi, input[type="time"].fi {
+  height: 46px; line-height: 1; display: flex; align-items: center;
+  -webkit-appearance: none; appearance: none;
+  padding-top: 0; padding-bottom: 0;
+}
 .two-fi { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .type-opt {
@@ -747,7 +752,7 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .modal input, .modal textarea { width: 100% !important; }
   .fi { font-size: 16px !important; }
   .two-fi { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-  #f-date, #f-start, #f-end { box-sizing: border-box !important; width: 100% !important; min-width: 0 !important; }
+  #f-date, #f-start, #f-end { box-sizing: border-box !important; width: 100% !important; min-width: 0 !important; height: 46px !important; line-height: 1 !important; -webkit-appearance: none !important; appearance: none !important; display: flex !important; align-items: center !important; }
   .modal .two-fi { width: 100% !important; }
   .modal .fg { min-width: 0 !important; }
   .type-grid { grid-template-columns: 1fr 1fr !important; }
