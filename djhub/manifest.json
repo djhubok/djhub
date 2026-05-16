@@ -2,7 +2,7 @@
   "name": "DJHub",
   "short_name": "DJHub",
   "description": "Performance Tracker para DJs",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#06060a",
   "theme_color": "#06060a",

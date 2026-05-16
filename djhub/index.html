@@ -2,6 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DJHub">
+<meta name="theme-color" content="#06060a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DJHub</title>
 <!-- FIREBASE -->
@@ -1252,24 +1258,18 @@ function renderAnalytics() {
     chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--acc)">Mejor: '+bestLbl+' · '+fmtM(gs.monthly[bestMonth])+'</span>';
     chartHTML += '</div>';
     chartHTML += '<div style="position:relative;height:160px;display:flex;align-items:flex-end;gap:10px;padding:0 4px;margin-bottom:8px">';
-     months.forEach(function(m) {
+    months.forEach(function(m) {
       const val = gs.monthly[m] || 0;
-      const pct = Math.max(val/maxV*100, 8);
+      const pct = Math.max(val/maxV*100, 3);
       const isBest = m === bestMonth;
       const mo = moLbl[parseInt(m.split('-')[1])-1];
-      const ratio = maxV > 0 ? val/maxV : 0;
-      let barColor, lblColor;
-      if(isBest)             { barColor = 'var(--acc)'; lblColor = 'var(--acc)'; }
-      else if(ratio >= 0.75) { barColor = '#6dff9e'; lblColor = '#6dff9e'; }
-      else if(ratio >= 0.5)  { barColor = '#a8e063'; lblColor = '#a8e063'; }
-      else if(ratio >= 0.25) { barColor = '#ffd166'; lblColor = '#ffd166'; }
-      else                   { barColor = 'var(--s4)'; lblColor = 'var(--dim)'; }
-      const sym2 = (fmtM(1)||'$')[0];
-      const exactVal = Math.round(val).toLocaleString('es-AR');
+      const barColor = isBest ? 'var(--acc)' : 'var(--s4)';
+      const lblColor = isBest ? 'var(--acc)' : 'var(--dim)';
+      const valColor = isBest ? 'var(--acc)' : 'var(--muted)';
+      const dot = isBest ? '<div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc)"></div>' : '';
       chartHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;position:relative">';
-      chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:5px 5px 0 0;background:'+barColor+';transition:background .2s;display:flex;align-items:center;justify-content:center;overflow:hidden">';
-      if(pct > 18) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;font-weight:900;color:#06060a;text-align:center;padding:2px;line-height:1.1">'+sym2+exactVal+'</span>';
-      chartHTML += '</div>';
+      chartHTML += '<div class="chv" style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:'+valColor+';white-space:nowrap;opacity:0;transition:opacity .2s;position:absolute;top:0">'+fmtM(val)+'</div>';
+      chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:5px 5px 0 0;background:'+barColor+';transition:background .2s">'+dot+'</div>';
       chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
       chartHTML += '</div>';
     });
