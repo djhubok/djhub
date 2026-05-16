@@ -802,19 +802,13 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .fi { font-size: 16px !important; }
   .two-fi { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
 
-  /* Date and time inputs — constrain width, no overflow */
-  #f-date, #f-start, #f-end {
-    width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-
   /* Modal form — prevent any horizontal overflow */
-  .modal, .modal * { box-sizing: border-box; max-width: 100%; }
-  .modal .fg { overflow: hidden; }
-
-  /* Modal body no horizontal scroll */
-  .modal-body { overflow-x: hidden !important; }
+  .modal { box-sizing: border-box; }
+  .modal-body { overflow-x: hidden !important; padding: 16px !important; }
+  .modal .fg, .modal input, .modal textarea, .modal select {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+  }
   .type-grid { grid-template-columns: 1fr 1fr !important; }
 
   /* Cards */
@@ -1018,11 +1012,11 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       </div>
       <div class="fg">
         <label class="fl">Fecha</label>
-        <input class="fi" id="f-date" type="date" onchange="onDateCh()">
+        <input class="fi" id="f-date" type="date" onchange="onDateCh()" style="width:100%;box-sizing:border-box">
       </div>
-      <div class="two-fi">
-        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" id="f-start" type="time"></div>
-        <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" id="f-start" type="time" style="width:100%;box-sizing:border-box"></div>
+        <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time" style="width:100%;box-sizing:border-box"></div>
       </div>
       <div class="fg" id="genre-section" style="display:none">
         <label class="fl" style="display:flex;align-items:center;justify-content:space-between">
@@ -1401,10 +1395,9 @@ function renderAnalytics() {
        else if(ratio >= 0.25) { barColor = '#ffd166'; lblColor = '#ffd166'; }
        else { barColor = 'var(--s4)'; lblColor = 'var(--dim)'; }
        const sym = (fmtM(1)||'$')[0];
-       const shortVal = val>=1000000?(val/1000000).toFixed(1)+'M':val>=1000?(val/1000).toFixed(0)+'k':val.toString();
-       chartHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;position:relative">';
+        const exactVal = Math.round(val).toLocaleString('es-AR');
        chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:6px 6px 0 0;background:'+barColor+';transition:background .2s;display:flex;align-items:center;justify-content:center;overflow:hidden">';
-       if(pct > 16) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:900;color:#06060a;text-align:center;padding:2px">'+sym+shortVal+'</span>';
+        if(pct > 16) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;font-weight:900;color:#06060a;text-align:center;padding:2px;line-height:1.1;word-break:break-all">'+sym+exactVal+'</span>';
        chartHTML += '</div>';
        chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
        chartHTML += '</div>';
