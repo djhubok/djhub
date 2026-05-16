@@ -74,6 +74,10 @@ onAuthStateChanged(auth, async (user) => {
     const savedName = user.displayName || user.email || '';
     const photoURL = user.photoURL || null;
     document.getElementById('user-name').textContent = savedName;
+    const mobName = document.getElementById('mob-name');
+    const mobAvatar = document.getElementById('mob-avatar');
+    if(mobName) mobName.textContent = savedName;
+    if(mobAvatar) { if(photoURL) mobAvatar.innerHTML='<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'; else mobAvatar.textContent=(savedName||'DJ')[0].toUpperCase(); }
     if(photoURL) {
       document.getElementById('user-avatar').innerHTML = '<img src="'+photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     } else {
@@ -705,6 +709,56 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
 .empty-icon { font-size: 40px; margin-bottom: 14px; opacity: .5; }
 .empty-txt { font-size: 14px; color: var(--muted); }
 .empty-sub { font-size: 12px; color: var(--dim); margin-top: 6px; }
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+@media (max-width: 768px) {
+  .shell { flex-direction: column !important; height: 100vh; overflow: hidden; }
+  .sidebar {
+    width: 100% !important; height: 60px !important;
+    flex-direction: row !important; border-right: none !important;
+    border-top: 1px solid var(--b1) !important; order: 2;
+    padding: 0 !important; overflow: hidden; flex-shrink: 0;
+  }
+  .logo-wrap { display: none !important; }
+  .sidebar-bottom { display: none !important; }
+  .nav { flex-direction: row !important; width: 100%; padding: 0 !important; gap: 0 !important; }
+  .nav-btn {
+    flex: 1 !important; flex-direction: column !important; gap: 2px !important;
+    padding: 6px 2px !important; font-size: 10px !important; border-radius: 0 !important;
+    border: none !important; min-width: 0; height: 60px;
+  }
+  .nav-btn svg { width: 20px !important; height: 20px !important; flex-shrink: 0; }
+  .nav-count { display: none !important; }
+  .main { order: 1; flex: 1; height: calc(100vh - 60px) !important; overflow-y: auto; overflow-x: hidden; }
+  .page, .scroll { overflow-x: hidden !important; max-width: 100%; box-sizing: border-box; }
+  .scroll { padding: 14px !important; }
+  .topbar { padding: 12px 14px !important; }
+  #mobile-user-bar { display: flex !important; }
+  .analytics-hero { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .an-card { padding: 14px 12px !important; }
+  .an-val { font-size: 26px !important; }
+  #an-chart { overflow-x: hidden !important; }
+  #auth-screen { padding: 0 12px !important; }
+  #auth-screen > div { width: 100% !important; }
+  .overlay { align-items: flex-end !important; padding: 0 !important; }
+  .modal { width: 100% !important; border-radius: 18px 18px 0 0 !important; max-height: 90vh; overflow: hidden; }
+  .modal-body { overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-height: calc(90vh - 60px); padding: 16px !important; box-sizing: border-box; }
+  .modal, .modal .fg, .modal input, .modal textarea { box-sizing: border-box !important; max-width: 100% !important; }
+  .modal input, .modal textarea { width: 100% !important; }
+  .fi { font-size: 16px !important; }
+  .two-fi { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .type-grid { grid-template-columns: 1fr 1fr !important; }
+  .ev-card { padding: 14px 12px !important; }
+  .ev-meta { flex-wrap: wrap; gap: 6px; }
+  .venue-kpis { grid-template-columns: 1fr 1fr !important; }
+  .add-btn { padding: 9px 14px !important; font-size: 13px !important; }
+}
+@media (max-width: 390px) {
+  .an-val { font-size: 22px !important; }
+  .nav-btn { font-size: 9px !important; }
+  .scroll { padding: 10px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -825,6 +879,15 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
     </div>
   </div>
 
+  <!-- MOBILE USER BAR -->
+  <div id="mobile-user-bar" style="display:none;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="mob-avatar" style="width:26px;height:26px;border-radius:50%;background:var(--acc);color:#06060a;font-family:'Bebas Neue',sans-serif;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"></div>
+      <span id="mob-name" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <button onclick="logout()" style="background:none;border:1px solid var(--b1);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif">Cerrar sesión</button>
+  </div>
+
   <div class="scroll">
 
     <!-- PAGE: AGENDA -->
@@ -895,7 +958,7 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
         <div class="fg"><label class="fl">Hora inicio</label><input class="fi" id="f-start" type="time"></div>
         <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time"></div>
       </div>
-      <div class="fg">
+      <div class="fg" id="genre-section" style="display:none">
         <label class="fl" style="display:flex;align-items:center;justify-content:space-between">
           Géneros del set
           <span onclick="clearGenreHistoryInline()" style="font-size:10px;color:var(--dim);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:400;text-transform:none;letter-spacing:0" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--dim)'">🗑 Limpiar sugerencias</span>
@@ -1258,21 +1321,27 @@ function renderAnalytics() {
     chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--acc)">Mejor: '+bestLbl+' · '+fmtM(gs.monthly[bestMonth])+'</span>';
     chartHTML += '</div>';
     chartHTML += '<div style="position:relative;height:160px;display:flex;align-items:flex-end;gap:10px;padding:0 4px;margin-bottom:8px">';
-    months.forEach(function(m) {
-      const val = gs.monthly[m] || 0;
-      const pct = Math.max(val/maxV*100, 3);
-      const isBest = m === bestMonth;
-      const mo = moLbl[parseInt(m.split('-')[1])-1];
-      const barColor = isBest ? 'var(--acc)' : 'var(--s4)';
-      const lblColor = isBest ? 'var(--acc)' : 'var(--dim)';
-      const valColor = isBest ? 'var(--acc)' : 'var(--muted)';
-      const dot = isBest ? '<div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc)"></div>' : '';
-      chartHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;position:relative">';
-      chartHTML += '<div class="chv" style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:'+valColor+';white-space:nowrap;opacity:0;transition:opacity .2s;position:absolute;top:0">'+fmtM(val)+'</div>';
-      chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:5px 5px 0 0;background:'+barColor+';transition:background .2s">'+dot+'</div>';
-      chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
-      chartHTML += '</div>';
-    });
+     months.forEach(function(m) {
+       const val = gs.monthly[m] || 0;
+       const pct = Math.max(val/maxV*100, 8);
+       const isBest = m === bestMonth;
+       const mo = moLbl[parseInt(m.split('-')[1])-1];
+       const ratio = maxV > 0 ? val/maxV : 0;
+       let barColor, lblColor;
+       if(isBest)             { barColor = 'var(--acc)'; lblColor = 'var(--acc)'; }
+       else if(ratio >= 0.75) { barColor = '#6dff9e'; lblColor = '#6dff9e'; }
+       else if(ratio >= 0.5)  { barColor = '#a8e063'; lblColor = '#a8e063'; }
+       else if(ratio >= 0.25) { barColor = '#ffd166'; lblColor = '#ffd166'; }
+       else                   { barColor = 'var(--s4)'; lblColor = 'var(--dim)'; }
+       const sym2 = (fmtM(1)||'$')[0];
+       const exactVal = Math.round(val).toLocaleString('es-AR');
+       chartHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;position:relative">';
+       chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:5px 5px 0 0;background:'+barColor+';transition:background .2s;display:flex;align-items:center;justify-content:center;overflow:hidden">';
+       if(pct > 18) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;font-weight:900;color:#06060a;text-align:center;padding:2px">'+sym2+exactVal+'</span>';
+       chartHTML += '</div>';
+       chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
+       chartHTML += '</div>';
+     });
     chartHTML += '</div>';
     chartHTML += '<div style="border-top:1px solid var(--b1);padding-top:10px;display:flex;justify-content:space-between">';
     chartHTML += '<span style="font-size:11px;color:var(--dim)">Últimos '+months.length+' meses</span>';
@@ -1476,6 +1545,18 @@ function openEdit(id) {
 }
 
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+window.deleteCurrentEvent = async function() {
+  if(!editId) return;
+  if(!confirm('¿Eliminar esta fecha? Esta acción no se puede deshacer.')) return;
+  events = events.filter(e => e.id !== editId);
+  if(window._firebaseDelete) window._firebaseDelete(editId);
+  const _u = window._auth?.currentUser;
+  if(_u) { try { localStorage.setItem('djhub_cache_'+_u.uid, JSON.stringify({events, ts: Date.now()})); } catch(e) {} }
+  closeModal(); render();
+  if(document.getElementById('page-lugares').classList.contains('active')) renderVenues();
+  if(document.getElementById('page-ganancias').classList.contains('active')) renderAnalytics();
+};
 
 window.deleteCurrentEvent = async function() {
   if(!editId) return;
