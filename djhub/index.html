@@ -760,6 +760,13 @@ input[type="date"].fi, input[type="time"].fi {
   .ev-meta { flex-wrap: wrap; gap: 6px; }
   .venue-kpis { grid-template-columns: 1fr 1fr !important; }
   .add-btn { padding: 9px 14px !important; font-size: 13px !important; }
+  .detail-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 12px !important; }
+  .dcard { padding: 12px 14px !important; }
+  .dcard-val { font-size: 20px !important; }
+  .dcard-lbl { font-size: 10px !important; }
+  .two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .history-item { flex-wrap: nowrap; gap: 8px; }
+  .hi-pay { font-size: 14px !important; }
 }
 @media (max-width: 390px) {
   .an-val { font-size: 22px !important; }
@@ -1539,6 +1546,7 @@ function openEdit(id) {
   renderGenreTags();
   const past=isPast(ev.date);
   document.getElementById('rev-wrap').style.display=past?'':'none';
+  document.getElementById('genre-section').style.display=past?'':'none';
   if(past){
     document.getElementById('f-crowd').value=ev.review?.crowd||'';
     document.getElementById('f-staff').value=ev.review?.staff||'';
@@ -1586,7 +1594,9 @@ function onVenueType() {
 
 function onDateCh() {
   const v=document.getElementById('f-date').value;
-  document.getElementById('rev-wrap').style.display=(v&&isPast(v))?'':'none';
+  const past = v && isPast(v);
+  document.getElementById('rev-wrap').style.display=past?'':'none';
+  document.getElementById('genre-section').style.display=past?'':'none';
 }
 
 function clearT(){['b','a','p','f'].forEach(x=>document.getElementById('to-'+x).className='type-opt');}
