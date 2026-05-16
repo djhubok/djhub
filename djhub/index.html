@@ -1410,41 +1410,26 @@ function renderAnalytics() {
     chartHTML += '</div>';
     chartHTML += '<div style="position:relative;height:160px;display:flex;flex-direction:row;align-items:flex-end;gap:6px;padding:0 4px;margin-bottom:8px;width:100%">';
     months.forEach(function(m) {
-       const val = gs.monthly[m] || 0;
-       const pct = Math.max(val/maxV*100, 8);
-       const isBest = m === bestMonth;
-       const mo = moLbl[parseInt(m.split('-')[1])-1];
-       // Color based on relative earnings
-       const ratio = maxV > 0 ? val/maxV : 0;
-       let barColor, lblColor;
-       if(isBest) { barColor = 'var(--acc)'; lblColor = 'var(--acc)'; }
-       else if(ratio >= 0.75) { barColor = '#6dff9e'; lblColor = '#6dff9e'; }
-       else if(ratio >= 0.5)  { barColor = '#a8e063'; lblColor = '#a8e063'; }
-       else if(ratio >= 0.25) { barColor = '#ffd166'; lblColor = '#ffd166'; }
-       else { barColor = 'var(--s4)'; lblColor = 'var(--dim)'; }
-       const sym = (fmtM(1)||'$')[0];
-        const exactVal = Math.round(val).toLocaleString('es-AR');
-       chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:6px 6px 0 0;background:'+barColor+';transition:background .2s;display:flex;align-items:center;justify-content:center;overflow:hidden">';
-        if(pct > 16) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;font-weight:900;color:#06060a;text-align:center;padding:2px;line-height:1.1;word-break:break-all">'+sym+exactVal+'</span>';
-       chartHTML += '</div>';
-       chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
-       chartHTML += '</div>';
-     });
-     chartHTML += '</div>';
-    chartHTML += '<div style="border-top:1px solid var(--b1);padding-top:10px;display:flex;justify-content:space-between">';
-    chartHTML += '<span style="font-size:11px;color:var(--dim)">Últimos '+months.length+' meses</span>';
-    chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted)">Total: '+fmtM(totalPeriod)+'</span>';
-    chartHTML += '</div>';
-    document.getElementById('an-chart').innerHTML = chartHTML;
-    // attach hover events after render — no inline handlers
-    document.querySelectorAll('#an-chart .chb').forEach(function(bar) {
-      const isBest = bar.dataset.best === 'true';
-      const label = bar.parentElement.querySelector('.chv');
-      bar.addEventListener('mouseenter', function() {
-        bar.style.background = isBest ? 'var(--acc)' : 'var(--s3)';
-        bar.style.opacity = '0.85';
-        if(label) label.style.opacity = '1';
-      });
+      const val = gs.monthly[m] || 0;
+      const pct = Math.max(val/maxV*100, 8);
+      const isBest = m === bestMonth;
+      const mo = moLbl[parseInt(m.split('-')[1])-1];
+      const ratio = maxV > 0 ? val/maxV : 0;
+      let barColor, lblColor;
+      if(isBest) { barColor = 'var(--acc)'; lblColor = 'var(--acc)'; }
+      else if(ratio >= 0.75) { barColor = '#6dff9e'; lblColor = '#6dff9e'; }
+      else if(ratio >= 0.5)  { barColor = '#a8e063'; lblColor = '#a8e063'; }
+      else if(ratio >= 0.25) { barColor = '#ffd166'; lblColor = '#ffd166'; }
+      else { barColor = 'var(--s4)'; lblColor = 'var(--dim)'; }
+      const sym = (fmtM(1)||'$')[0];
+      const exactVal = Math.round(val).toLocaleString('es-AR');
+      chartHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end">';
+      chartHTML += '<div class="chb" data-best="'+isBest+'" data-val="'+val+'" style="width:100%;position:relative;height:'+pct+'%;border-radius:6px 6px 0 0;background:'+barColor+';transition:background .2s;display:flex;align-items:center;justify-content:center;overflow:hidden">';
+      if(pct > 16) chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;font-weight:900;color:#06060a;text-align:center;padding:2px;line-height:1.1">'+sym+exactVal+'</span>';
+      chartHTML += '</div>';
+      chartHTML += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+lblColor+';text-align:center">'+mo+'</div>';
+      chartHTML += '</div>';
+    });
       bar.addEventListener('mouseleave', function() {
         bar.style.background = isBest ? 'var(--acc)' : 'var(--s4)';
         bar.style.opacity = '1';
