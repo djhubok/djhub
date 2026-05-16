@@ -1502,6 +1502,7 @@ function openNew() {
   ['f-venue','f-date','f-start','f-end','f-genre-input','f-pay','f-notes','f-crowd','f-staff','f-setrev','f-peak'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('smart-tip').innerHTML='';
   document.getElementById('rev-wrap').style.display='none';
+  document.getElementById('genre-section').style.display='none';
   document.getElementById('submit-btn').textContent='Guardar fecha';
   document.getElementById('delete-ev-wrap').style.display='none';
   clearT(); clearR(); clearRv(); selPay('pend');
