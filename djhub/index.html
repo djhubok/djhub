@@ -802,13 +802,16 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
   .fi { font-size: 16px !important; }
   .two-fi { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
 
-  /* Modal form — prevent any horizontal overflow */
-  .modal { box-sizing: border-box; }
-  .modal-body { overflow-x: hidden !important; padding: 16px !important; }
-  .modal .fg, .modal input, .modal textarea, .modal select {
+  /* Modal — no horizontal scroll, all inputs constrained */
+  .modal { box-sizing: border-box !important; width: 100% !important; }
+  .modal-body { overflow-x: hidden !important; padding: 16px !important; box-sizing: border-box; }
+  .modal input, .modal textarea, .modal select, .modal .fi {
     box-sizing: border-box !important;
     max-width: 100% !important;
+    width: 100% !important;
   }
+  .modal .two-fi { width: 100% !important; box-sizing: border-box !important; }
+  .modal .fg { min-width: 0 !important; overflow: hidden; }
   .type-grid { grid-template-columns: 1fr 1fr !important; }
 
   /* Cards */
@@ -1012,11 +1015,11 @@ textarea.fi { resize: vertical; min-height: 80px; line-height: 1.6; }
       </div>
       <div class="fg">
         <label class="fl">Fecha</label>
-        <input class="fi" id="f-date" type="date" onchange="onDateCh()" style="width:100%;box-sizing:border-box">
+        <input class="fi" id="f-date" type="date" onchange="onDateCh()">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" id="f-start" type="time" style="width:100%;box-sizing:border-box"></div>
-        <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time" style="width:100%;box-sizing:border-box"></div>
+      <div class="two-fi">
+        <div class="fg"><label class="fl">Hora inicio</label><input class="fi" id="f-start" type="time"></div>
+        <div class="fg"><label class="fl">Hora fin</label><input class="fi" id="f-end" type="time"></div>
       </div>
       <div class="fg" id="genre-section" style="display:none">
         <label class="fl" style="display:flex;align-items:center;justify-content:space-between">
@@ -1380,7 +1383,7 @@ function renderAnalytics() {
     chartHTML += '<span>Ganancias por mes</span>';
     chartHTML += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--acc)">Mejor: '+bestLbl+' · '+fmtM(gs.monthly[bestMonth])+'</span>';
     chartHTML += '</div>';
-    chartHTML += '<div style="position:relative;height:160px;display:flex;align-items:flex-end;gap:10px;padding:0 4px;margin-bottom:8px">';
+    chartHTML += '<div style="position:relative;height:160px;display:flex;flex-direction:row;align-items:flex-end;gap:6px;padding:0 4px;margin-bottom:8px;width:100%">';
     months.forEach(function(m) {
        const val = gs.monthly[m] || 0;
        const pct = Math.max(val/maxV*100, 8);
